@@ -12,6 +12,7 @@ import { MessageBubble } from './MessageBubble';
 import { Composer } from './Composer';
 import { Avatar } from './Avatar';
 import { ConfirmButton } from './ConfirmButton';
+import { EditTaskButton, TaskEditor } from './TaskEditor';
 import { Icon } from './Icon';
 
 interface Props {
@@ -32,6 +33,7 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
   const [forceTemplate, setForceTemplate] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [zoom, setZoom] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<number | null>(null);
   const [drag, setDrag] = useState(0);
   const [dropped, setDropped] = useState<File | null>(null);
   const box = useRef<HTMLDivElement>(null);
@@ -259,15 +261,20 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
             const t = it.t;
             return (
               <Fragment key={key}>{day}
-                <div className={'task-card' + (t.done ? ' done' : '')}>
+                <div className={'task-card' + (t.done ? ' done' : '') + (editingTask === t.id ? ' editing' : '')}>
                   <button type="button" className={'chk' + (t.done ? ' on' : '')} onClick={() => dispatch({ type: 'toggleTask', id: t.id })}
                     title={t.done ? 'סימון כפתוחה' : 'סימון כבוצעה'} aria-label={t.done ? 'סימון כפתוחה' : 'סימון כבוצעה'}>
                     <Icon name="solid/check" />
                   </button>
-                  <div>
-                    <div className="t-title">{t.title}</div>
-                    <div className="t-sub"><span><Icon name="solid/list-check" /> משימה</span><DueLabel task={t} now={now} /><PrioTag prio={t.prio} /></div>
-                  </div>
+                  {editingTask === t.id ? <TaskEditor task={t} onClose={() => setEditingTask(null)} /> : (
+                    <>
+                      <div>
+                        <div className="t-title">{t.title}</div>
+                        <div className="t-sub"><span><Icon name="solid/list-check" /> משימה</span><DueLabel task={t} now={now} /><PrioTag prio={t.prio} /></div>
+                      </div>
+                      <EditTaskButton onClick={() => setEditingTask(t.id)} />
+                    </>
+                  )}
                 </div>
               </Fragment>
             );

@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import type { Conversation } from '../types';
 import { useApp } from '../store';
 import { DueLabel } from '../lib/tasks';
 import { Avatar } from './Avatar';
 import { ConfirmButton } from './ConfirmButton';
+import { EditTaskButton, TaskEditor } from './TaskEditor';
 import { Icon } from './Icon';
 
 export function DetailsPanel({ conv: c, onNewTask }: { conv: Conversation; onNewTask: () => void }) {
   const { state, dispatch, toast, now } = useApp();
+  const [editing, setEditing] = useState<number | null>(null);
   const out = c.messages.filter((m) => m.dir === 'out').length;
   const inc = c.messages.filter((m) => m.dir === 'in').length;
   const tasks = state.tasks.filter((t) => t.convId === c.id)
@@ -25,10 +28,15 @@ export function DetailsPanel({ conv: c, onNewTask }: { conv: Conversation; onNew
           <div key={t.id} className="mini-task">
             <button type="button" className={'chk' + (t.done ? ' on' : '')} onClick={() => dispatch({ type: 'toggleTask', id: t.id })}
               aria-label={t.done ? 'סימון כפתוחה' : 'סימון כבוצעה'}><Icon name="solid/check" /></button>
-            <div>
-              <div className={t.done ? 'done-text' : ''}>{t.title}</div>
-              <div className="t-sub"><DueLabel task={t} now={now} /></div>
-            </div>
+            {editing === t.id ? <TaskEditor task={t} onClose={() => setEditing(null)} /> : (
+              <>
+                <div>
+                  <div className={t.done ? 'done-text' : ''}>{t.title}</div>
+                  <div className="t-sub"><DueLabel task={t} now={now} /></div>
+                </div>
+                <EditTaskButton onClick={() => setEditing(t.id)} />
+              </>
+            )}
           </div>
         )) : <span className="muted-sm">אין משימות לאיש הקשר</span>}
       </div>

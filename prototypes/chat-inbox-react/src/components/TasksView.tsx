@@ -3,6 +3,8 @@ import { addDays } from '../lib/dates';
 import { DueLabel, PrioTag, taskState, type TaskState } from '../lib/tasks';
 import type { Task } from '../types';
 import { ConfirmButton } from './ConfirmButton';
+import { TaskEditor } from './TaskEditor';
+import { useState } from 'react';
 import { Icon } from './Icon';
 
 const FILTERS: [TaskFilter, string][] = [['open', 'פתוחות'], ['late', 'באיחור'], ['today', 'להיום'], ['week', 'השבוע'], ['done', 'בוצעו'], ['all', 'הכל']];
@@ -14,6 +16,7 @@ const PRIO_RANK = { high: 0, normal: 1, low: 2 };
 
 export function TasksView() {
   const { state, dispatch, toast, now } = useApp();
+  const [editing, setEditing] = useState<number | null>(null);
   const open = state.tasks.filter((t) => !t.done);
   const stats: [TaskFilter, number, string, string][] = [
     ['open', open.length, 'משימות פתוחות', ''],
@@ -78,6 +81,7 @@ export function TasksView() {
                   <div key={t.id} className={'t-row' + (t.done ? ' done' : '')}>
                     <button type="button" className={'chk' + (t.done ? ' on' : '')} onClick={() => dispatch({ type: 'toggleTask', id: t.id })}
                       aria-label={t.done ? 'סימון כפתוחה' : 'סימון כבוצעה'}><Icon name="solid/check" /></button>
+                    {editing === t.id ? <TaskEditor task={t} onClose={() => setEditing(null)} /> : <>
                     <div className="t-main">
                       <div className="t-title">{t.title}</div>
                       <div className="t-sub">
@@ -89,6 +93,9 @@ export function TasksView() {
                       </div>
                     </div>
                     <div className="acts">
+                      <button type="button" className="icon-btn" onClick={() => setEditing(t.id)} title="עריכת המשימה" aria-label="עריכת המשימה">
+                        <Icon name="solid/pen" />
+                      </button>
                       <button type="button" className="icon-btn" onClick={() => dispatch({ type: 'open', id: c.id })} title="מעבר לשיחה" aria-label="מעבר לשיחה">
                         <Icon name="regular/comments" />
                       </button>
@@ -96,6 +103,7 @@ export function TasksView() {
                         <Icon name="regular/trash-can" />
                       </ConfirmButton>
                     </div>
+                    </>}
                   </div>
                 );
               })}

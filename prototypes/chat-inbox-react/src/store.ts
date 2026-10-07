@@ -43,6 +43,7 @@ export type Action =
   | { type: 'unpin'; convId: number }
   | { type: 'movePin'; convId: number; to: number }
   | { type: 'addTask'; task: Omit<Task, 'id'> }
+  | { type: 'updateTask'; id: number; patch: Pick<Task, 'title' | 'due' | 'prio'> }
   | { type: 'toggleTask'; id: number }
   | { type: 'deleteTask'; id: number };
 
@@ -116,6 +117,8 @@ export function reducer(s: State, a: Action): State {
       const id = s.tasks.length ? Math.max(...s.tasks.map((t) => t.id)) + 1 : 1;
       return { ...s, tasks: [...s.tasks, { ...a.task, id }] };
     }
+    case 'updateTask':
+      return { ...s, tasks: s.tasks.map((t) => (t.id === a.id ? { ...t, ...a.patch } : t)) };
     case 'toggleTask':
       return {
         ...s,

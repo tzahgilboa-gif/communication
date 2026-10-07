@@ -108,6 +108,13 @@ describe('reducer', () => {
     s = reducer(s, { type: 'pin', convId: 4 });
     expect(s.convs.filter((c) => c.pin).length).toBe(3);
   });
+  it('updates a task title, due date and priority', () => {
+    const due = new Date('2026-12-01T09:00');
+    const s = reducer(s0, { type: 'updateTask', id: 2, patch: { title: 'כותרת חדשה', due, prio: 'high' } });
+    const t = s.tasks.find((x) => x.id === 2)!;
+    expect([t.title, t.due, t.prio, t.convId, t.done]).toEqual(['כותרת חדשה', due, 'high', 2, false]);
+    expect(s.tasks.find((x) => x.id === 1)).toBe(s0.tasks.find((x) => x.id === 1));
+  });
   it('unpin closes the gap', () => {
     const s = reducer(s0, { type: 'unpin', convId: 1 });
     expect(s.convs.find((c) => c.id === 5)!.pin).toBe(1);
