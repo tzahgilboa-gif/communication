@@ -759,28 +759,22 @@
         function openTasksOf(convId) { return tasks.filter(function (t) { return t.convId === convId && !t.done; }); }
 
         // ======================================================================
-        // background: scattered Global SMS "G", extracted from the favicon (no new asset)
+        // background: scattered Global SMS "G", drawn on a canvas (no external asset)
         // ======================================================================
         var gPattern = null;
 
         function buildGPattern() {
-            var img = new Image();
-            img.onload = function () {
-                var s = img.width;
+            var draw = function () {
+                var s = 64;
                 var src = document.createElement('canvas');
                 src.width = s; src.height = s;
                 var sx = src.getContext('2d');
-                sx.drawImage(img, 0, 0);
-                var data = sx.getImageData(0, 0, s, s);
-                // white "G" pixels -> brand purple with alpha by brightness, purple square -> transparent
-                for (var i = 0; i < data.data.length; i += 4) {
-                    var r = data.data[i], g = data.data[i + 1], b = data.data[i + 2];
-                    var bright = (r + g + b) / 3;
-                    var a = Math.max(0, Math.min(255, (bright - 120) * 2));
-                    data.data[i] = 122; data.data[i + 1] = 10; data.data[i + 2] = 127;
-                    data.data[i + 3] = Math.round(a * 0.07);
-                }
-                sx.putImageData(data, 0, 0);
+                // brand purple at low opacity
+                sx.fillStyle = 'rgba(122, 10, 127, 0.07)';
+                sx.font = '700 ' + s + 'px Heebo, Arial, sans-serif';
+                sx.textAlign = 'center';
+                sx.textBaseline = 'middle';
+                sx.fillText('G', s / 2, s / 2 + s * 0.05);
 
                 var tile = document.createElement('canvas');
                 tile.width = 260; tile.height = 260;
@@ -796,7 +790,9 @@
                 var m = document.getElementById('messages');
                 if (m) m.style.backgroundImage = gPattern;
             };
-            img.src = '../assets/img/favicon.png';
+            // wait for Heebo so the "G" is not drawn in the fallback font
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw, draw);
+            else draw();
         }
 
         // ======================================================================
@@ -1586,7 +1582,7 @@
         // demo: a new inbound message arrives after 20 seconds (simulates polling)
         setTimeout(function () {
             var c = convs[1];
-            c.messages.push({ dir: 'in', text: 'עוד שאלה קטנה, אפשר לקבל את החשבונית גם בתור קישור? למשל [www.example.co.il/invoice](https://www.example.co.il/invoice)', time: new Date() });
+            c.messages.push({ dir: 'in', text: 'עוד שאלה קטנה, אפשר לקבל את החשבונית גם בתור קישור? למשל www.example.co.il/invoice', time: new Date() });
             if (state.selected !== c.id) c.unread++;
             toast('הודעה חדשה מ' + c.name);
             renderList();
