@@ -6,6 +6,7 @@ import { cleanName, sniff } from '../lib/files';
 import { errorInfo } from '../lib/errors';
 import { reducer, type State } from '../store';
 import { initialConversations, initialTasks } from '../data/sample';
+import { snippet } from '../components/MessageBubble';
 
 const html = (text: string, plain = false) => renderToStaticMarkup(<RichText text={text} plain={plain} />);
 
@@ -118,5 +119,17 @@ describe('reducer', () => {
   it('unpin closes the gap', () => {
     const s = reducer(s0, { type: 'unpin', convId: 1 });
     expect(s.convs.find((c) => c.id === 5)!.pin).toBe(1);
+  });
+});
+
+describe('quote snippet', () => {
+  const base = { id: 'x', time: new Date() };
+  it('one line, cut at 90 characters', () => {
+    expect(snippet({ ...base, text: 'שורה\nשנייה' })).toBe('שורה שנייה');
+    expect(snippet({ ...base, text: 'א'.repeat(200) }).length).toBe(90);
+  });
+  it('media without text', () => {
+    expect(snippet({ ...base, text: '', media: { type: 'image', url: '', name: 'a.jpg' } })).toBe('תמונה');
+    expect(snippet({ ...base, text: '', media: { type: 'pdf', url: '', name: 'חשבונית.pdf' } })).toBe('חשבונית.pdf');
   });
 });

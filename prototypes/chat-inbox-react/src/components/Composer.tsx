@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
-import type { Attachment, ComposerMode, Conversation, Priority, Template } from '../types';
+import type { Attachment, ComposerMode, Conversation, Message, Priority, Template } from '../types';
 import { quickReplies, templates } from '../data/sample';
 import { smsParts } from '../lib/sms';
 import { checkFile } from '../lib/files';
@@ -7,6 +7,7 @@ import { fmtSize, toLocalInput } from '../lib/dates';
 import { loadRecent, RECENT_MAX, saveRecent } from '../lib/emoji';
 import { useApp } from '../store';
 import { EmojiPicker } from './EmojiPicker';
+import { snippet } from './MessageBubble';
 import { Icon } from './Icon';
 
 const MAX_LEN = 4096; // WhatsApp text limit
@@ -18,6 +19,10 @@ interface Props {
   mode: ComposerMode;
   setMode: (m: ComposerMode) => void;
   onSend: (text: string, attachment: Attachment | null) => void;
+  /** the message being replied to, shown above the text box */
+  replyTo: Message | null;
+  customerName: string;
+  onCancelReply: () => void;
   onNote: (text: string) => void;
   onTemplate: (t: Template, vars: string[]) => void;
   onTask: (title: string, due: Date | null, prio: Priority) => void;
@@ -74,6 +79,9 @@ function TextBox(p: Props & { tabs: React.ReactNode }) {
   useEffect(() => {
     if (!isMobile) input.current?.focus(); // on a phone this would pop the keyboard over the conversation
   }, [isMobile, note]);
+
+  // the agent chose "reply": they want to type now, on a phone too
+  useEffect(() => { if (p.replyTo) input.current?.focus(); }, [p.replyTo]);
 
   // free the preview URL when the attachment is removed or replaced, or the composer goes away,
   // but not after sending: the sent message still shows it
@@ -149,7 +157,7 @@ function TextBox(p: Props & { tabs: React.ReactNode }) {
       if (quick.length) { setText(quick[Math.min(quickIdx, quick.length - 1)].text); return; }
       send();
     }
-    if (e.key === 'Escape') { setEmojiOpen(false); if (quickOpen) setText(''); }
+    if (e.key === 'Escape') { setEmojiOpen(false); if (quickOpen) setText(''); else if (p.replyTo && !emojiOpen) p.onCancelReply(); }
   };
 
   const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -171,6 +179,16 @@ function TextBox(p: Props & { tabs: React.ReactNode }) {
   return (
     <div className={'composer' + (note ? ' note-mode' : '')}>
       <div className="composer-tabs">{p.tabs}{fmtBar}</div>
+      {p.replyTo && !note && (
+        <div className="reply-bar">
+          <Icon name="solid/reply" />
+          <div className="reply-body">
+            <b>תשובה ל{p.replyTo.dir === 'out' ? 'הודעה שלכם' : p.customerName}</b>
+            <span>{snippet(p.replyTo)}</span>
+          </div>
+          <button type="button" className="x" title="ביטול התשובה" aria-label="ביטול התשובה" onClick={p.onCancelReply}><Icon name="solid/xmark" /></button>
+        </div>
+      )}
       {att && !note && (
         <div className="att-preview">
           {att.type === 'image' ? <img src={att.url} alt="" /> : <div className="pdf"><Icon name="regular/file-pdf" /></div>}

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>תיבת שיחות | Global SMS</title>
+  <title>תיבת שיחות | Global Sms</title>
   <style>
     html, body { margin: 0; height: 100%; }
     body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; background: #f0f2f5; font-family: 'Heebo', Arial, sans-serif; }
@@ -17,10 +17,11 @@
   </style>
 </head>
 <body>
-  <!-- TODO: replace logo.svg and the name with the company's real logo file and exact name -->
   <header class="brand">
-    <img src="logo.svg" alt="">
-    <span class="name">Global SMS</span>
+    <!-- company logo from the company's server; logo.svg is the fallback if it can't load -->
+    <img src="https://itnewsletter.itnewsletter.co.il/app/assets/img/logoGlobal.png" alt="Global Sms"
+      onerror="this.onerror = null; this.src = 'logo.svg';">
+    <span class="name">Global Sms</span>
   </header>
 
   <div id="chat-inbox"></div>

@@ -18,7 +18,7 @@ npm run build      # typecheck + dist/chat-inbox.js
 |---|---|
 | `inbox.html` | The page: company logo and name at the top, the inbox below |
 | `chat-inbox.js` | The app |
-| `logo.svg` | **Placeholder**: replace with the real logo (and the name in `inbox.html`) |
+| `logo.svg` | Fallback logo, shown only if the company logo (loaded from `itnewsletter.itnewsletter.co.il/app/assets/img/logoGlobal.png`) can't load |
 
 In `inbox.html` the server prints the account's `intSmsFactor` from the DB into the `mount` call.
 

@@ -9,6 +9,8 @@ export interface SendRequest {
   freeForm: boolean;
   /** WhatsApp 24h window is open (the server checks this again; the client value can be stale) */
   windowOpen: boolean;
+  /** WhatsApp only: reply to this message (sent as context.message_id with its wamid) */
+  replyTo?: string;
 }
 
 export type StatusUpdate = (status: MsgStatus, error?: SendError) => void;

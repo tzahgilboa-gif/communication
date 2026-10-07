@@ -601,3 +601,49 @@ a { color: var(--accent); }
 /* marketing templates blocked for an opted-out contact */
 .tpl-blocked { margin-top: 8px; font-size: 13px; color: var(--danger); display: flex; gap: 6px; align-items: center; }
 .primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* message actions: the button sits inside the bubble, so moving the mouse to it never leaves the message */
+.msg-menu-btn {
+    position: absolute; top: 3px; inset-inline-end: 3px; z-index: 2;
+    width: 22px; height: 22px; border-radius: 50%; border: 0; padding: 0;
+    background: inherit; color: var(--muted); font-size: 11px; display: none;
+}
+.msg:hover .msg-menu-btn, .msg:focus-within .msg-menu-btn, .msg.menu-open .msg-menu-btn { display: inline-flex; align-items: center; justify-content: center; }
+.msg-menu-btn:hover { background: #0000000f; color: var(--text); }
+@media (hover: none) { .msg-menu-btn { display: inline-flex; align-items: center; justify-content: center; opacity: 0.7; } }
+.msg { padding-inline-end: 26px; }
+.msg-menu {
+    position: absolute; top: 28px; inset-inline-end: 4px; z-index: 5;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.14); min-width: 130px; overflow: hidden; white-space: nowrap;
+}
+.msg-menu button { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; padding: 8px 12px; font-size: 13px; text-align: start; }
+.msg-menu button:hover, .msg-menu button:focus-visible { background: var(--accent-soft); }
+
+/* quoted message inside a reply */
+.quote-ref {
+    display: block; width: 100%; text-align: start; border: 0; cursor: pointer;
+    background: #0000000a; border-inline-start: 3px solid var(--wa); border-radius: 6px;
+    padding: 4px 8px; margin-bottom: 4px; font: inherit; color: inherit; white-space: normal;
+}
+.quote-ref.mine { border-inline-start-color: var(--accent); }
+.quote-ref:hover { background: #00000012; }
+.quote-who { display: block; font-size: 12px; font-weight: 700; color: var(--wa); }
+.quote-ref.mine .quote-who { color: var(--accent); }
+.quote-text { display: block; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
+
+/* the message a quote points to, after a jump */
+.msg.flash { animation: ci-flash 1.6s ease-out; }
+@keyframes ci-flash { 0%, 30% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); } }
+@media (prefers-reduced-motion: reduce) { .msg.flash { animation-duration: 0.01s; outline: 3px solid var(--accent); } }
+
+/* replying: the quoted message above the text box */
+.reply-bar {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 6px 10px;
+    background: #fafbfc; border: 1px solid var(--border); border-inline-start: 3px solid var(--wa); border-radius: 8px;
+}
+.reply-bar > .ico { color: var(--wa); }
+.reply-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.reply-body b { font-size: 12px; color: var(--wa); }
+.reply-body span { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reply-bar .x { border: 0; background: transparent; color: var(--muted); width: 28px; height: 28px; }

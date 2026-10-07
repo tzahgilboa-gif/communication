@@ -30,6 +30,8 @@ export interface Message {
   /** set when this was sent as a template */
   template?: { name: string; vars: string[] };
   error?: SendError;
+  /** id of the message this one replies to (WhatsApp: context.message_id) */
+  replyTo?: string;
 }
 
 export interface Conversation {

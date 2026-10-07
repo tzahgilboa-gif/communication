@@ -38,14 +38,17 @@ export const quickReplies: QuickReply[] = [
 
 type ConvSeed = Omit<Conversation, 'older'>;
 
+// the customer replied to this campaign message (WhatsApp sends which one in context.id)
+const danaCampaign = m({ dir: 'out', text: 'היי דנה, מבצע הסתיו שלנו התחיל! 20% הנחה על כל המוצרים עד סוף החודש.\nלפרטים: https://www.example.co.il/sale', time: ago(60 * 26), status: 'read', srcLabel: 'קמפיין: מבצע סתיו 2026' });
+
 const seeds: ConvSeed[] = [
   {
     id: 1, name: 'דנה לוי', phone: '052-7123456', channel: 'wa', status: 'open', unread: 2, pin: 1,
     groups: ['לקוחות VIP', 'ניוזלטר'], lastCampaign: 'מבצע סתיו 2026', optedOut: false,
     messages: [
-      m({ dir: 'out', text: 'היי דנה, מבצע הסתיו שלנו התחיל! 20% הנחה על כל המוצרים עד סוף החודש.\nלפרטים: https://www.example.co.il/sale', time: ago(60 * 26), status: 'read', srcLabel: 'קמפיין: מבצע סתיו 2026' }),
+      danaCampaign,
       m({ dir: 'in', text: 'היי, ההנחה תקפה גם על הדגם הזה?', time: ago(48), media: { type: 'image', url: sampleImg, name: 'photo.jpg' } }),
-      m({ dir: 'in', text: 'ואפשר לשלב עם קוד קופון?', time: ago(45) }),
+      m({ dir: 'in', text: 'ואפשר לשלב עם קוד קופון?', time: ago(45), replyTo: danaCampaign.id }),
     ],
   },
   {

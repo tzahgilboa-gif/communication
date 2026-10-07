@@ -33,6 +33,9 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [zoom, setZoom] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<number | null>(null);
+  // message actions menu (one open at a time) and the message being replied to
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [drag, setDrag] = useState(0);
   const [dropped, setDropped] = useState<File | null>(null);
   const box = useRef<HTMLDivElement>(null);
@@ -49,6 +52,20 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
   const left = windowLeftMin(c, now);
   const windowOpen = left === null || left > 0;
   const templateOnly = c.channel === 'wa' && (!windowOpen || forceTemplate);
+  // a reply can only go out as a free-form WhatsApp message
+  useLayoutEffect(() => { if (templateOnly) setReplyTo(null); }, [templateOnly]);
+
+  useLayoutEffect(() => {
+    if (!menuFor) return;
+    // composedPath(): inside a shadow root, e.target seen from document is the host element
+    const close = (e: MouseEvent) => {
+      if (!e.composedPath().some((n) => n instanceof Element && n.matches('.msg-menu, .msg-menu-btn'))) setMenuFor(null);
+    };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuFor(null); };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc); };
+  }, [menuFor]);
 
   // scroll: stay where the user is reading; follow new messages only when at the bottom or after sending
   useLayoutEffect(() => {
@@ -74,7 +91,7 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
 
   const deliver = (msg: Message, freeForm: boolean) => {
     sendMessage(
-      { channel: c.channel, phone: c.phone, freeForm, windowOpen },
+      { channel: c.channel, phone: c.phone, freeForm, windowOpen, replyTo: msg.replyTo },
       (status, error) => {
         update(msg.id, { status, error });
         if (error) toast('הודעה ל' + c.name + ' נכשלה: ' + errorInfo(error).title);
@@ -98,8 +115,26 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
     deliver(msg, freeForm);
   };
 
-  const onSend = (text: string, att: Attachment | null) =>
-    post({ id: newMessageId(), dir: 'out', text, time: new Date(), status: 'sending', media: att ? { type: att.type, url: att.url, name: att.name, size: att.size } : undefined }, true);
+  const onSend = (text: string, att: Attachment | null) => {
+    post({
+      id: newMessageId(), dir: 'out', text, time: new Date(), status: 'sending', replyTo: replyTo?.id,
+      media: att ? { type: att.type, url: att.url, name: att.name, size: att.size } : undefined,
+    }, true);
+    setReplyTo(null);
+  };
+
+  const copyText = (text: string) =>
+    navigator.clipboard.writeText(text).then(() => toast('ההודעה הועתקה'), () => toast('לא הצלחנו להעתיק. סמנו את הטקסט והעתיקו ידנית'));
+
+  // jump to the quoted message and flash it
+  const goToMessage = (id: string) => {
+    const el = box.current?.querySelector<HTMLElement>('[data-msg-id="' + CSS.escape(id) + '"]');
+    if (!el) return toast(c.older.length ? 'ההודעה המקורית עדיין לא נטענה. לחצו על "טעינת הודעות קודמות"' : 'ההודעה המקורית לא נמצאה');
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    el.classList.remove('flash');
+    void el.offsetWidth; // restart the animation
+    el.classList.add('flash');
+  };
 
   const onTemplate = (t: Template, vars: string[]) => {
     if (c.optedOut && t.category === 'marketing') return toast('אי אפשר לשלוח תבנית שיווקית ללקוח שהוסר מרשימת התפוצה');
@@ -281,7 +316,11 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
           const m = it.m;
           return (
             <Fragment key={key}>{day}
-              <MessageBubble msg={m} channel={c.channel} onZoom={setZoom} onErrorAction={(a) => onErrorAction(m, a)} />
+              <MessageBubble msg={m} channel={c.channel} onZoom={setZoom} onErrorAction={(a) => onErrorAction(m, a)}
+                quoted={m.replyTo ? c.messages.find((x) => x.id === m.replyTo) ?? null : undefined} customerName={c.name}
+                onQuoteClick={goToMessage} menuOpen={menuFor === m.id} onMenu={(o) => setMenuFor(o ? m.id : null)}
+                canReply={c.channel === 'wa' && !templateOnly && m.status !== 'failed' && m.status !== 'sending'}
+                onReply={() => { setReplyTo(m); setMode('reply'); }} onCopy={() => copyText(m.text)} />
             </Fragment>
           );
         })}
@@ -289,6 +328,7 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
 
       <Composer conv={c} templateOnly={templateOnly} mode={mode} setMode={setMode}
         onSend={onSend} onNote={onNote} onTemplate={onTemplate} onTask={onTask}
+        replyTo={replyTo} customerName={c.name} onCancelReply={() => setReplyTo(null)}
         droppedFile={dropped} onDropHandled={() => setDropped(null)} />
 
       {drag > 0 && canDrop && <div className="drop-hint"><div><Icon name="solid/cloud-arrow-up" /> שחררו כאן כדי לצרף</div></div>}
