@@ -44,6 +44,7 @@
             color: var(--text);
             background: var(--bg);
             height: 100vh;
+            height: 100dvh; /* mobile: excludes the browser's address bar */
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -171,6 +172,7 @@
         .tag.closed { background: #eceff1; color: #78838f; }
         .tag.tasks { background: var(--task-soft); color: var(--task); }
         .tag.tasks.late { background: var(--danger-soft); color: var(--danger); }
+        .tag.optout { background: var(--danger-soft); color: var(--danger); }
 
         /* pin controls */
         .pin-btn {
@@ -180,6 +182,14 @@
         }
 
         .conv:hover .pin-btn { display: block; }
+
+        /* touch screens have no hover: always show the pin button */
+        @media (hover: none) {
+            .pin-btn { display: block; }
+            .conv:not(.pinned) .conv-time { margin-inline-end: 30px; }
+        }
+
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .pin-btn:hover { background: var(--pin-soft); color: var(--pin); }
 
         .pin-num {
@@ -230,6 +240,9 @@
         .window-bar.open { background: var(--wa-soft); color: var(--wa); }
         .window-bar.closed { background: var(--warn-soft); color: var(--warn); }
         .window-bar.sms { background: var(--sms-soft); color: var(--sms); }
+        .window-bar.optout { background: var(--danger-soft); color: var(--danger); }
+        .window-bar.suggest { background: var(--warn-soft); color: var(--warn); }
+        .window-bar button { margin-inline-start: auto; border: 1px solid currentColor; background: var(--panel); color: inherit; border-radius: 6px; height: 26px; padding: 0 10px; font-size: 12px; }
 
         .messages {
             flex: 1; overflow-y: auto; padding: 16px 6%;
@@ -256,6 +269,9 @@
         .msg .err { font-size: 12px; color: var(--danger); margin-top: 4px; }
         .msg a { word-break: break-all; }
         .tick.read { color: #34b7f1; }
+        .msg code, .note code { font-family: Consolas, 'Courier New', monospace; font-size: 13px; background: #0000000d; border-radius: 4px; padding: 0 4px; direction: ltr; unicode-bidi: isolate; }
+        .msg code.mono, .note code.mono { display: block; padding: 4px 6px; white-space: pre-wrap; text-align: left; }
+        .quote { display: block; border-inline-start: 3px solid #0000002e; padding-inline-start: 8px; color: var(--muted); }
 
         .msg .to-task {
             position: absolute; top: 4px; inset-inline-end: -32px;
@@ -265,7 +281,7 @@
         }
 
         .msg.out .to-task { inset-inline-end: auto; inset-inline-start: -32px; }
-        .msg:hover .to-task { display: block; }
+        .msg:hover .to-task, .msg:focus-within .to-task { display: block; }
 
         .media-img { display: block; max-width: 260px; width: 100%; border-radius: 6px; margin-bottom: 4px; cursor: zoom-in; }
 
@@ -360,6 +376,21 @@
         }
 
         .quick.show { display: block; }
+
+        .emoji-pop {
+            position: absolute; bottom: calc(100% + 4px); inset-inline-start: 14px; width: 300px; max-width: calc(100% - 28px);
+            background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12); display: none; z-index: 10;
+            grid-template-columns: repeat(8, 1fr); gap: 2px;
+        }
+
+        .emoji-pop.show { display: grid; }
+        .emoji-pop button { border: 0; background: transparent; font-size: 20px; height: 34px; border-radius: 6px; }
+        .emoji-pop button:hover { background: var(--bg); }
+
+        .fmt-bar { display: flex; gap: 2px; margin-inline-start: auto; }
+        .fmt-bar button { border: 0; background: transparent; color: var(--muted); width: 28px; height: 26px; border-radius: 6px; font-size: 13px; }
+        .fmt-bar button:hover { background: var(--bg); color: var(--text); }
         .quick-head { font-size: 12px; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--border); }
         .quick-item { padding: 8px 12px; cursor: pointer; }
         .quick-item:hover, .quick-item.hl { background: var(--accent-soft); }
@@ -669,7 +700,7 @@
             },
             {
                 id: 10, name: 'ליאת שמעוני', phone: '058-9900112', channel: 'sms', status: 'closed', unread: 0, pin: 0,
-                groups: ['ניוזלטר'], lastCampaign: 'הזמנה לאירוע', optedOut: true,
+                groups: ['ניוזלטר'], lastCampaign: 'הזמנה לאירוע', optedOut: false,
                 messages: [
                     { dir: 'out', text: 'הוזמנתם לערב השקה ביום חמישי ב-19:00. להשיב "כן" לאישור הגעה.', time: ago(60 * 5), status: 'delivered', srcLabel: 'קמפיין: הזמנה לאירוע' },
                     { dir: 'in', text: 'הסר', time: ago(60 * 4) }
@@ -731,7 +762,15 @@
             taskFilter: 'open', taskSearch: '', taskPrio: 'all'
         };
 
+        // account settings, loaded from the DB. The server sets them in a script tag before this one:
+        //   window.ACCOUNT = { intSmsFactor: 3 };
+        // intSmsFactor = how many SMS segments are billed as one message (1 = every segment is a message)
+        var account = window.ACCOUNT || { intSmsFactor: 3 }; // prototype sample value
+        var SMS_FACTOR = Math.max(1, parseInt(account.intSmsFactor, 10) || 1);
+
         var MAX_PINS = 3;
+        var EMOJIS = ['😀', '😂', '😊', '😍', '🙏', '👍', '👌', '👏', '🙌', '💪', '🎉', '🔥', '❤️', '💙', '✅', '❌',
+            '⭐', '📦', '🚚', '🛒', '💳', '🧾', '📅', '⏰', '📞', '📍', '🎁', '💡', '🤔', '😅', '😢', '👋'];
         var LIMITS = { image: 5 * 1024 * 1024, pdf: 100 * 1024 * 1024 }; // WhatsApp Cloud API limits
 
         // ======================================================================
@@ -745,12 +784,44 @@
 
         // escape first, then turn URLs into safe links (http/https/www only)
         function linkify(text) {
-            return esc(text).replace(/(\bhttps?:\/\/[^\s<]+|\bwww\.[^\s<]+)/gi, function (u) {
-                var trail = '';
-                while (/[.,!?)\]]$/.test(u)) { trail = u.slice(-1) + trail; u = u.slice(0, -1); }
-                var href = /^www\./i.test(u) ? 'https://' + u : u;
-                return '<a href="' + href + '" target="_blank" rel="noopener noreferrer" dir="ltr">' + u + '</a>' + trail;
-            });
+            return esc(text).replace(/(\bhttps?:\/\/[^\s<]+|\bwww\.[^\s<]+)/gi, linkHtml);
+        }
+
+        function linkHtml(u) {
+            var trail = '';
+            while (/[.,!?)\]]$/.test(u)) { trail = u.slice(-1) + trail; u = u.slice(0, -1); }
+            var href = /^www\./i.test(u) ? 'https://' + u : u;
+            return '<a href="' + href + '" target="_blank" rel="noopener noreferrer" dir="ltr">' + u + '</a>' + trail;
+        }
+
+        // WhatsApp formatting: *bold* _italic_ ~strike~ ```mono``` `code`, "- " lists, "> " quotes.
+        // Runs on already-escaped text and only adds fixed tags, so user text can never become HTML.
+        function richText(text) {
+            var keep = [];
+            var hold = function (html) { keep.push(html); return '\u0000' + (keep.length - 1) + '\u0000'; };
+            var t = esc(String(text).replace(/\u0000/g, ''));
+            t = t.replace(/```([\s\S]+?)```/g, function (m, c) { return hold('<code class="mono">' + c + '</code>'); });
+            t = t.replace(/`([^`\n]+)`/g, function (m, c) { return hold('<code>' + c + '</code>'); });
+            t = t.replace(/(\bhttps?:\/\/[^\s<]+|\bwww\.[^\s<]+)/gi, function (u) { return hold(linkHtml(u)); });
+            var wrap = function (mark, tag) {
+                var re = new RegExp('(^|[\\s(.,!?:;"\'\\u0000])' + mark + '([^\\s' + mark + '](?:[^' + mark + '\\n]*[^\\s' + mark + '])?)' + mark + '(?=$|[\\s).,!?:;"\'\\u0000])', 'g');
+                t = t.replace(re, function (m, pre, inner) { return pre + '<' + tag + '>' + inner + '</' + tag + '>'; });
+            };
+            wrap('\\*', 'b'); wrap('_', 'i'); wrap('~', 's');
+            t = t.split('\n').map(function (line) {
+                if (/^&gt; /.test(line)) return '<span class="quote">' + line.slice(5) + '</span>';
+                if (/^[-*] /.test(line)) return '• ' + line.slice(2);
+                return line;
+            }).join('\n');
+            return t.replace(/\u0000(\d+)\u0000/g, function (m, i) { return keep[+i]; });
+        }
+
+        // SMS has no formatting: show it exactly as the customer receives it
+        function msgHtml(text, channel) { return channel === 'sms' ? linkify(text) : richText(text); }
+
+        // strip control and bidi-override characters (e.g. "fdp.exe" shown as "exe.pdf")
+        function cleanName(name) {
+            return String(name || '').replace(/[\u0000-\u001f\u007f\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').slice(0, 120);
         }
 
         function initials(name) {
@@ -764,12 +835,14 @@
         function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
 
         function dayLabel(d) {
+            var now = new Date();
             if (sameDay(d, now)) return 'היום';
             if (sameDay(d, addDays(now, -1))) return 'אתמול';
             return d.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'numeric' });
         }
 
         function listTime(d) {
+            var now = new Date();
             if (sameDay(d, now)) return hhmm(d);
             if (sameDay(d, addDays(now, -1))) return 'אתמול';
             return d.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' });
@@ -824,7 +897,7 @@
 
         function dueLabel(t) {
             if (!t.due) return '<span class="due">ללא תאריך יעד</span>';
-            var s = taskState(t), d = t.due, txt;
+            var s = taskState(t), d = t.due, txt, now = new Date();
             if (sameDay(d, now)) txt = 'היום ' + hhmm(d);
             else if (sameDay(d, addDays(now, 1))) txt = 'מחר ' + hhmm(d);
             else if (sameDay(d, addDays(now, -1))) txt = 'אתמול ' + hhmm(d);
@@ -903,7 +976,9 @@
             }
             rest.forEach(function (c) { html += convHtml(c); });
 
+            var focused = document.activeElement && document.activeElement.classList.contains('conv') ? document.activeElement.getAttribute('data-id') : null;
             document.getElementById('convList').innerHTML = html || '<div class="empty-list">לא נמצאו שיחות</div>';
+            if (focused) { var f = document.querySelector('.conv[data-id="' + focused + '"]'); if (f) f.focus(); }
             renderCounts();
         }
 
@@ -916,8 +991,8 @@
             var late = ot.some(function (t) { return taskState(t) === 'late'; });
 
             var pinCtl = c.pin
-                ? '<button class="pin-num" data-pinmenu="' + c.id + '" title="שינוי מיקום ההצמדה"><i class="fa-solid fa-thumbtack"></i>' + c.pin + '</button>'
-                : '<button class="pin-btn" data-pin="' + c.id + '" title="הצמדה למעלה"><i class="fa-solid fa-thumbtack"></i></button>';
+                ? '<button class="pin-num" data-pinmenu="' + c.id + '" title="שינוי מיקום ההצמדה" aria-label="שינוי מיקום ההצמדה"><i class="fa-solid fa-thumbtack"></i>' + c.pin + '</button>'
+                : '<button class="pin-btn" data-pin="' + c.id + '" title="הצמדה למעלה" aria-label="הצמדה למעלה"><i class="fa-solid fa-thumbtack"></i></button>';
 
             var menu = '';
             if (state.pinMenu === c.id) {
@@ -928,7 +1003,7 @@
                 menu += '<div class="unpin" data-unpin="' + c.id + '"><i class="fa-solid fa-xmark"></i> ביטול הצמדה</div></div>';
             }
 
-            return '<div class="conv' + (c.unread ? ' unread' : '') + (c.pin ? ' pinned' : '') + (state.selected === c.id ? ' selected' : '') + '" data-id="' + c.id + '">' +
+            return '<div class="conv' + (c.unread ? ' unread' : '') + (c.pin ? ' pinned' : '') + (state.selected === c.id ? ' selected' : '') + '" data-id="' + c.id + '" tabindex="0" role="button" aria-label="' + esc('שיחה עם ' + c.name + (c.unread ? ', ' + c.unread + ' הודעות שלא נקראו' : '')) + '">' +
                 '<div class="avatar">' + initials(c.name) +
                 '<span class="ch ' + c.channel + '"><i class="' + (c.channel === 'wa' ? 'fa-brands fa-whatsapp' : 'fa-solid fa-comment-sms') + '"></i></span></div>' +
                 '<div class="conv-main">' +
@@ -936,6 +1011,7 @@
                 '<div class="conv-row"><span class="conv-preview">' + prefix + preview + '</span>' + (c.unread ? '<span class="badge">' + c.unread + '</span>' : '') + '</div>' +
                 '<div class="conv-meta">' +
                 (c.status === 'closed' ? '<span class="tag closed">סגורה</span>' : '') +
+                (c.optedOut ? '<span class="tag optout"><i class="fa-solid fa-ban"></i> הוסר מדיוור</span>' : '') +
                 (left > 0 ? '<span class="tag window"><i class="fa-regular fa-clock"></i> מענה חופשי ' + fmtLeft(left) + '</span>' : '') +
                 (ot.length ? '<span class="tag tasks' + (late ? ' late' : '') + '"><i class="fa-solid fa-list-check"></i> ' + ot.length + (late ? ' · באיחור' : '') + '</span>' : '') +
                 '</div></div>' + pinCtl + menu + '</div>';
@@ -984,32 +1060,40 @@
             var th = document.getElementById('thread');
             if (!c) return;
 
-            // keep what the user is typing when the thread re-renders (new message, status update)
-            var oldInput = document.getElementById('msgInput');
-            var keep = (oldInput && th.getAttribute('data-conv') == c.id && th.getAttribute('data-mode') === state.mode) ? oldInput.value : '';
-            var hadFocus = oldInput && document.activeElement === oldInput;
+            // re-render of the same conversation (new message, status update):
+            // keep everything typed in the composer and the scroll position
+            var same = th.getAttribute('data-conv') == c.id;
+            var keep = same && th.getAttribute('data-mode') === state.mode ? snapshotComposer() : null;
+            var oldBox = document.getElementById('messages');
+            var oldScroll = same && oldBox ? oldBox.scrollTop : null;
+            var atBottom = !oldBox || oldBox.scrollHeight - oldBox.scrollTop - oldBox.clientHeight < 60;
             th.setAttribute('data-conv', c.id);
             th.setAttribute('data-mode', state.mode);
 
             var left = windowLeftMin(c);
+            state.windowOpen = left > 0;
             var bar;
-            if (c.channel === 'sms') bar = '<div class="window-bar sms"><i class="fa-solid fa-comment-sms"></i> שיחת SMS · כל הודעה נספרת לפי מספר החלקים שלה · אין שליחת קבצים</div>';
-            else if (left > 0) bar = '<div class="window-bar open"><i class="fa-regular fa-clock"></i> חלון המענה פתוח · אפשר לכתוב חופשי ולשלוח קבצים עוד ' + fmtLeft(left) + ' שעות</div>';
+            if (c.channel === 'sms') bar = '<div class="window-bar sms"><i class="fa-solid fa-comment-sms"></i> שיחת SMS · ' + (SMS_FACTOR > 1 ? 'כל ' + SMS_FACTOR + ' מקטעים נחשבים הודעה אחת לחיוב' : 'כל מקטע נחשב הודעה לחיוב') + ' · אין שליחת קבצים</div>';
+            else if (left > 0) bar = '<div class="window-bar open" id="windowBar"><i class="fa-regular fa-clock"></i><span>חלון המענה פתוח · אפשר לכתוב חופשי ולשלוח קבצים עוד <span id="windowLeft">' + fmtLeft(left) + '</span> שעות</span></div>';
             else bar = '<div class="window-bar closed"><i class="fa-solid fa-lock"></i> עברו 24 שעות מההודעה האחרונה של הלקוח · אפשר לשלוח רק תבנית מאושרת</div>';
+
+            // removed from the mailing list: warn; customer wrote "הסר": offer to remove
+            if (c.optedOut) bar += '<div class="window-bar optout"><i class="fa-solid fa-ban"></i> הלקוח הוסר מרשימת התפוצה · מותר לשלוח לו רק הודעות שירות, לא פרסום</div>';
+            else if (asksOptOut(c)) bar += '<div class="window-bar suggest"><i class="fa-solid fa-circle-exclamation"></i> הלקוח ביקש הסרה מדיוור<button id="optOutQuick">הסרה מרשימת התפוצה</button></div>';
 
             var html = '', lastDay = null;
             timeline(c).forEach(function (it) {
                 if (!lastDay || !sameDay(lastDay, it.time)) { html += '<div class="day">' + dayLabel(it.time) + '</div>'; lastDay = it.time; }
 
                 if (it.kind === 'note') {
-                    html += '<div class="note"><div class="src"><i class="fa-regular fa-note-sticky"></i> הערה פנימית · ' + hhmm(it.time) + '</div>' + linkify(it.m.text) + '</div>';
+                    html += '<div class="note"><div class="src"><i class="fa-regular fa-note-sticky"></i> הערה פנימית · ' + hhmm(it.time) + '</div>' + richText(it.m.text) + '</div>';
                     return;
                 }
 
                 if (it.kind === 'task') {
                     var t = it.t;
                     html += '<div class="task-card' + (t.done ? ' done' : '') + '">' +
-                        '<button class="chk' + (t.done ? ' on' : '') + '" data-toggletask="' + t.id + '" title="' + (t.done ? 'סימון כפתוחה' : 'סימון כבוצעה') + '"><i class="fa-solid fa-check"></i></button>' +
+                        '<button class="chk' + (t.done ? ' on' : '') + '" data-toggletask="' + t.id + '" title="' + (t.done ? 'סימון כפתוחה' : 'סימון כבוצעה') + '" aria-label="' + (t.done ? 'סימון כפתוחה' : 'סימון כבוצעה') + '"><i class="fa-solid fa-check"></i></button>' +
                         '<div><div class="t-title">' + esc(t.title) + '</div>' +
                         '<div class="t-sub"><span><i class="fa-solid fa-list-check"></i> משימה</span>' + dueLabel(t) + prioTag(t.prio) + '</div></div></div>';
                     return;
@@ -1033,9 +1117,9 @@
 
                 var idx = c.messages.indexOf(m);
                 html += '<div class="msg ' + m.dir + (m.status === 'failed' ? ' failed' : '') + '">' +
-                    '<button class="to-task" data-msgtask="' + idx + '" title="יצירת משימה מההודעה"><i class="fa-solid fa-list-check"></i></button>' +
+                    '<button class="to-task" data-msgtask="' + idx + '" title="יצירת משימה מההודעה" aria-label="יצירת משימה מההודעה"><i class="fa-solid fa-list-check"></i></button>' +
                     (m.srcLabel ? '<div class="src"><i class="fa-solid fa-bullhorn"></i>' + esc(m.srcLabel) + '</div>' : '') +
-                    media + (m.text ? linkify(m.text) : '') +
+                    media + (m.text ? msgHtml(m.text, c.channel) : '') +
                     '<div class="foot">' + hhmm(m.time) + ' ' + tick + '</div>' +
                     (m.error ? '<div class="err">' + esc(m.error) + '</div>' : '') +
                     '</div>';
@@ -1043,41 +1127,87 @@
 
             th.innerHTML =
                 '<div class="thread-head">' +
-                '<button class="icon-btn back" id="backBtn" title="חזרה לרשימה"><i class="fa-solid fa-arrow-right"></i></button>' +
+                '<button class="icon-btn back" id="backBtn" title="חזרה לרשימה" aria-label="חזרה לרשימה"><i class="fa-solid fa-arrow-right"></i></button>' +
                 '<div class="avatar">' + initials(c.name) + '</div>' +
                 '<div class="who"><div class="name">' + esc(c.name) + '</div><div class="sub"><span class="ltr">' + esc(c.phone) + '</span> · ' + (c.channel === 'wa' ? 'WhatsApp' : 'SMS') + '</div></div>' +
                 '<button class="icon-btn' + (c.pin ? ' on' : '') + '" id="pinToggle" title="' + (c.pin ? 'ביטול הצמדה' : 'הצמדה למעלה') + '"><i class="fa-solid fa-thumbtack"></i><span class="lbl">' + (c.pin ? 'מוצמדת ' + c.pin : 'הצמדה') + '</span></button>' +
                 '<button class="icon-btn" id="toggleStatus">' + (c.status === 'open'
                     ? '<i class="fa-solid fa-check" title="סימון כסגורה"></i><span class="lbl">סימון כסגורה</span>'
                     : '<i class="fa-solid fa-rotate-left" title="פתיחה מחדש"></i><span class="lbl">פתיחה מחדש</span>') + '</button>' +
-                '<button class="icon-btn" id="toggleDetails" title="פרטי איש קשר"><i class="fa-regular fa-id-card"></i></button>' +
+                '<button class="icon-btn" id="toggleDetails" title="פרטי איש קשר" aria-label="פרטי איש קשר"><i class="fa-regular fa-id-card"></i></button>' +
                 '</div>' + bar +
                 '<div class="messages" id="messages">' + html + '</div>' +
                 composerHtml(c, left);
 
             var box = document.getElementById('messages');
             if (gPattern) box.style.backgroundImage = gPattern;
-            box.scrollTop = box.scrollHeight;
+            // stay where the user was reading, unless they were at the bottom or just sent something
+            box.scrollTop = (oldScroll === null || atBottom || state.stickBottom) ? box.scrollHeight : oldScroll;
+            state.stickBottom = false;
 
             bindThread(c, left);
+            if (keep) restoreComposer(keep);
+        }
 
-            var newInput = document.getElementById('msgInput');
-            if (newInput && keep) {
-                newInput.value = keep;
-                newInput.oninput();
-                if (hadFocus) newInput.focus();
-            }
+        // the customer's last message is an opt-out request
+        function asksOptOut(c) {
+            var ins = c.messages.filter(function (m) { return m.dir === 'in'; });
+            var last = ins.length ? (ins[ins.length - 1].text || '').trim() : '';
+            return /^(הסר|הסירו|הסרה|הסירו אותי|stop|unsubscribe)[.!]?$/i.test(last);
+        }
+
+        function optOut(c) {
+            c.optedOut = true;
+            toast('איש הקשר הוסר מרשימת התפוצה');
+            renderAll();
+        }
+
+        // composer fields (reply text, task form, template variables) by id or data-v
+        function snapshotComposer() {
+            var snap = { fields: [], focus: null, due: null };
+            Array.prototype.forEach.call(document.querySelectorAll('#thread .composer input, #thread .composer textarea, #thread .composer select'), function (el) {
+                var key = el.id || (el.getAttribute('data-v') ? 'v' + el.getAttribute('data-v') : null);
+                if (!key || el.type === 'file') return;
+                snap.fields.push({ key: key, value: el.value });
+                if (document.activeElement === el) snap.focus = key;
+            });
+            var chip = document.querySelector('#dueChips .chip.active');
+            snap.due = chip ? chip.getAttribute('data-due') : '';
+            return snap;
+        }
+
+        function restoreComposer(snap) {
+            var find = function (key) {
+                return key.charAt(0) === 'v' && /^v\d+$/.test(key)
+                    ? document.querySelector('#tplVars input[data-v="' + key.slice(1) + '"]')
+                    : document.getElementById(key);
+            };
+            // template first: changing it redraws the variable inputs
+            var tpl = snap.fields.filter(function (f) { return f.key === 'tplSelect'; })[0];
+            var sel = document.getElementById('tplSelect');
+            if (tpl && sel && sel.value !== tpl.value) { sel.value = tpl.value; sel.onchange(); }
+            snap.fields.forEach(function (f) {
+                var el = find(f.key);
+                if (!el || f.key === 'tplSelect') return;
+                el.value = f.value;
+                if (el.oninput) el.oninput();
+            });
+            var chips = document.getElementById('dueChips');
+            if (chips) Array.prototype.forEach.call(chips.querySelectorAll('.chip'), function (x) {
+                x.classList.toggle('active', x.getAttribute('data-due') === snap.due);
+            });
+            if (snap.focus && find(snap.focus)) find(snap.focus).focus();
         }
 
         function composerHtml(c, left) {
             var mode = state.mode;
             var mustTemplate = c.channel === 'wa' && left <= 0 && mode === 'reply';
 
-            var tabs = '<div class="composer-tabs">' +
+            var tabsOpen = '<div class="composer-tabs">' +
                 '<button class="ctab' + (mode === 'reply' ? ' active' : '') + '" data-mode="reply">תשובה ללקוח</button>' +
                 '<button class="ctab task-tab' + (mode === 'task' ? ' active' : '') + '" data-mode="task"><i class="fa-solid fa-list-check"></i> משימה</button>' +
-                '<button class="ctab note-tab' + (mode === 'note' ? ' active' : '') + '" data-mode="note"><i class="fa-regular fa-note-sticky"></i> הערה פנימית</button>' +
-                '</div>';
+                '<button class="ctab note-tab' + (mode === 'note' ? ' active' : '') + '" data-mode="note"><i class="fa-regular fa-note-sticky"></i> הערה פנימית</button>';
+            var tabs = tabsOpen + '</div>';
 
             if (mode === 'task') {
                 return '<div class="composer">' + tabs +
@@ -1117,59 +1247,113 @@
             var attHtml = '';
             if (att && !noteMode) {
                 attHtml = '<div class="att-preview">' +
-                    (att.type === 'image' ? '<img src="' + att.url + '" alt="">' : '<div class="pdf"><i class="fa-regular fa-file-pdf"></i></div>') +
+                    (att.type === 'image' ? '<img src="' + esc(att.url) + '" alt="">' : '<div class="pdf"><i class="fa-regular fa-file-pdf"></i></div>') +
                     '<div class="info"><b>' + esc(att.name) + '</b><span>' + fmtSize(att.size) + ' · נשלח ישירות ל-WhatsApp ולא נשמר אצלנו</span></div>' +
-                    '<button class="x" id="attRemove" title="הסרת הקובץ"><i class="fa-solid fa-xmark"></i></button></div>';
+                    '<button class="x" id="attRemove" title="הסרת הקובץ" aria-label="הסרת הקובץ"><i class="fa-solid fa-xmark"></i></button></div>';
             }
 
             var hint = noteMode
                 ? '<span>הערה פנימית לא נשלחת ללקוח</span><span></span>'
                 : '<span>Enter לשליחה · Shift+Enter לשורה חדשה · <b>/</b> לתשובות מהירות' + (canAttach ? ' · אפשר גם לגרור או להדביק תמונה' : '') + '</span><span id="counter"></span>';
 
-            return '<div class="composer' + (noteMode ? ' note-mode' : '') + '">' + tabs + attHtml +
+            // WhatsApp formatting toolbar (SMS can't show formatting; internal notes can)
+            var fmt = (noteMode || c.channel === 'wa') ? '<div class="fmt-bar" id="fmtBar">' +
+                '<button data-fmt="*" title="מודגש" aria-label="מודגש"><b>B</b></button>' +
+                '<button data-fmt="_" title="נטוי" aria-label="נטוי"><i>I</i></button>' +
+                '<button data-fmt="~" title="קו חוצה" aria-label="קו חוצה"><s>S</s></button>' +
+                '<button data-fmt="```" title="כתב מכונה" aria-label="כתב מכונה"><i class="fa-solid fa-code"></i></button>' +
+                '</div>' : '';
+
+            return '<div class="composer' + (noteMode ? ' note-mode' : '') + '">' + tabsOpen + fmt + '</div>' + attHtml +
                 '<div class="quick" id="quick"></div>' +
+                '<div class="emoji-pop" id="emojiPop">' + EMOJIS.map(function (e) { return '<button type="button" data-emoji="' + e + '" aria-label="' + e + '">' + e + '</button>'; }).join('') + '</div>' +
                 '<div class="compose-row">' +
+                '<button class="round-btn attach-btn" id="emojiBtn" title="אימוג\'י" aria-label="אימוג\'י"><i class="fa-regular fa-face-smile"></i></button>' +
                 (noteMode ? '' : '<button class="round-btn attach-btn" id="attachBtn"' + (canAttach ? '' : ' disabled') +
-                    ' title="' + (canAttach ? 'צירוף תמונה (JPG/PNG עד 5MB) או PDF (עד 100MB)' : 'שליחת קבצים זמינה רק ב-WhatsApp') + '"><i class="fa-solid fa-paperclip"></i></button>') +
-                '<textarea id="msgInput" rows="1" placeholder="' + (noteMode ? 'כתבו הערה לעצמכם...' : (att ? 'כיתוב לקובץ (לא חובה)...' : 'כתבו הודעה...')) + '"></textarea>' +
-                '<button class="round-btn send-btn" id="sendBtn" title="' + (noteMode ? 'שמירת הערה' : 'שליחה') + '"><i class="fa-solid ' + (noteMode ? 'fa-check' : 'fa-paper-plane') + '"></i></button>' +
+                    ' title="' + (canAttach ? 'צירוף תמונה (JPG/PNG עד 5MB) או PDF (עד 100MB)' : 'שליחת קבצים זמינה רק ב-WhatsApp') + '" aria-label="צירוף קובץ"><i class="fa-solid fa-paperclip"></i></button>') +
+                '<textarea id="msgInput" rows="1" maxlength="4096" placeholder="' + (noteMode ? 'כתבו הערה לעצמכם...' : (att ? 'כיתוב לקובץ (לא חובה)...' : 'כתבו הודעה...')) + '"></textarea>' +
+                '<button class="round-btn send-btn" id="sendBtn" title="' + (noteMode ? 'שמירת הערה' : 'שליחה') + '" aria-label="' + (noteMode ? 'שמירת הערה' : 'שליחה') + '"><i class="fa-solid ' + (noteMode ? 'fa-check' : 'fa-paper-plane') + '"></i></button>' +
                 '</div>' +
                 '<div class="compose-hint">' + hint + '</div>' +
                 '</div>';
         }
 
+        // GSM-7 alphabet; anything else (Hebrew, emoji) makes the whole SMS Unicode
+        var GSM7 = '@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&\'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà';
+        var GSM7_EXT = '^{}\\[~]|€'; // count as 2 characters
+
+        function smsSegments(text) {
+            var gsm = true, len = 0;
+            for (var i = 0; i < text.length; i++) {
+                var ch = text[i];
+                if (GSM7.indexOf(ch) > -1) len += 1;
+                else if (GSM7_EXT.indexOf(ch) > -1) len += 2;
+                else { gsm = false; break; }
+            }
+            if (!gsm) len = text.length; // UTF-16 code units: an emoji counts as 2
+            var single = gsm ? 160 : 70, multi = gsm ? 153 : 67;
+            return { chars: len, segments: len <= single ? 1 : Math.ceil(len / multi) };
+        }
+
         function smsParts(text) {
-            var n = text.length;
-            if (!n) return '';
-            var parts = n <= 70 ? 1 : Math.ceil(n / 67);
-            return n + ' תווים · ' + parts + ' ' + (parts === 1 ? 'הודעה' : 'הודעות');
+            if (!text.length) return '';
+            var r = smsSegments(text);
+            var billed = Math.ceil(r.segments / SMS_FACTOR);
+            var out = r.chars + ' תווים · ' + r.segments + ' ' + (r.segments === 1 ? 'מקטע' : 'מקטעים');
+            return out + ' · ' + (billed === 1 ? 'הודעה אחת' : billed + ' הודעות') + ' לחיוב';
         }
 
         // ---------- attachments (prototype: kept in browser memory only) ----------
+        // first bytes of each allowed format; the browser's file.type only reflects the extension
+        var MAGIC = { jpeg: [0xFF, 0xD8, 0xFF], png: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], pdf: [0x25, 0x50, 0x44, 0x46, 0x2D] };
+
+        function sniff(bytes) {
+            for (var k in MAGIC) {
+                if (MAGIC[k].every(function (b, i) { return bytes[i] === b; })) return k;
+            }
+            return null;
+        }
+
         function takeFile(file, c) {
             if (!file) return;
             if (c.channel !== 'wa') { toast('שליחת קבצים זמינה רק ב-WhatsApp'); return; }
             if (windowLeftMin(c) <= 0) { toast('מחוץ לחלון 24 השעות אפשר לשלוח רק תבנית'); return; }
             var type = /^image\/(jpeg|png)$/.test(file.type) ? 'image' : (file.type === 'application/pdf' ? 'pdf' : null);
             if (!type) { toast('אפשר לצרף רק תמונה (JPG/PNG) או PDF'); return; }
+            if (!file.size) { toast('הקובץ ריק'); return; }
             if (file.size > LIMITS[type]) { toast(type === 'image' ? 'התמונה גדולה מ-5MB' : 'הקובץ גדול מ-100MB'); return; }
-            if (state.attachment) URL.revokeObjectURL(state.attachment.url);
-            state.attachment = { type: type, name: file.name || (type === 'image' ? 'image.png' : 'file.pdf'), size: file.size, url: URL.createObjectURL(file) };
-            state.mode = 'reply';
-            renderThread();
-            focusInput();
+
+            var convId = c.id;
+            var reader = new FileReader();
+            reader.onload = function () {
+                // the user may have opened another conversation while the file was read: never attach it there
+                if (state.selected !== convId) return;
+                var real = sniff(new Uint8Array(reader.result));
+                var ok = type === 'image' ? (real === 'jpeg' || real === 'png') : real === 'pdf';
+                if (!ok) { toast('תוכן הקובץ לא תואם לסוג שלו. אפשר לצרף רק תמונה (JPG/PNG) או PDF אמיתיים'); return; }
+                if (state.attachment) URL.revokeObjectURL(state.attachment.url);
+                var name = cleanName(file.name) || (type === 'image' ? 'image.' + (real === 'png' ? 'png' : 'jpg') : 'file.pdf');
+                state.attachment = { type: type, name: name, size: file.size, url: URL.createObjectURL(file) };
+                state.mode = 'reply';
+                renderThread();
+                focusInput();
+            };
+            reader.onerror = function () { toast('לא הצלחנו לקרוא את הקובץ'); };
+            reader.readAsArrayBuffer(file.slice(0, 8));
         }
 
         function bindThread(c, left) {
             var th = document.getElementById('thread');
 
-            document.getElementById('backBtn').onclick = function () { document.getElementById('inbox').classList.remove('show-thread'); };
+            document.getElementById('backBtn').onclick = function () { document.getElementById('inbox').classList.remove('show-thread'); renderList(); };
             document.getElementById('toggleStatus').onclick = function () {
                 c.status = c.status === 'open' ? 'closed' : 'open';
                 toast(c.status === 'closed' ? 'השיחה סומנה כסגורה' : 'השיחה נפתחה מחדש');
                 renderAll();
             };
             document.getElementById('toggleDetails').onclick = function () { document.getElementById('inbox').classList.toggle('no-details'); };
+            var oq = document.getElementById('optOutQuick');
+            if (oq) oq.onclick = function () { optOut(c); };
             document.getElementById('pinToggle').onclick = function () { if (c.pin) unpinConv(c.id); else pinConv(c.id); };
 
             Array.prototype.forEach.call(th.querySelectorAll('.ctab'), function (b) {
@@ -1194,8 +1378,13 @@
                 if (z) {
                     var lb = document.createElement('div');
                     lb.className = 'lightbox';
-                    lb.innerHTML = '<img src="' + z.getAttribute('src') + '" alt="">';
-                    lb.onclick = function () { lb.remove(); };
+                    var big = document.createElement('img');
+                    big.src = z.getAttribute('src');
+                    big.alt = '';
+                    lb.appendChild(big);
+                    var closeLb = function (ev) { if (!ev.key || ev.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', closeLb); } };
+                    lb.onclick = closeLb;
+                    document.addEventListener('keydown', closeLb);
                     document.body.appendChild(lb);
                 }
             };
@@ -1234,6 +1423,34 @@
             var fileInput = document.getElementById('fileInput');
 
             if (attachBtn) attachBtn.onclick = function () { fileInput.value = ''; fileInput.click(); };
+
+            // insert at the cursor (or wrap the selection) and keep typing
+            var insertAt = function (before, after) {
+                var a = input.selectionStart, b = input.selectionEnd, v = input.value;
+                if (v.length - (b - a) + before.length + (after || '').length > 4096) { toast('ההודעה ארוכה מדי'); return; }
+                input.value = v.slice(0, a) + before + v.slice(a, b) + (after || '') + v.slice(b);
+                input.selectionStart = a + before.length;
+                input.selectionEnd = b + before.length;
+                input.focus();
+                input.oninput();
+            };
+
+            var emojiPop = document.getElementById('emojiPop');
+            document.getElementById('emojiBtn').onclick = function () { emojiPop.classList.toggle('show'); };
+            emojiPop.onmousedown = function (e) { e.preventDefault(); }; // keep the textarea selection
+            emojiPop.onclick = function (e) {
+                var b = e.target.closest('[data-emoji]');
+                if (b) insertAt(b.getAttribute('data-emoji'));
+            };
+
+            var fmtBar = document.getElementById('fmtBar');
+            if (fmtBar) {
+                fmtBar.onmousedown = function (e) { e.preventDefault(); };
+                fmtBar.onclick = function (e) {
+                    var b = e.target.closest('[data-fmt]');
+                    if (b) insertAt(b.getAttribute('data-fmt'), b.getAttribute('data-fmt'));
+                };
+            }
             fileInput.onchange = function () { takeFile(fileInput.files[0], c); };
             var rm = document.getElementById('attRemove');
             if (rm) rm.onclick = function () { URL.revokeObjectURL(state.attachment.url); state.attachment = null; renderThread(); focusInput(); };
@@ -1251,12 +1468,14 @@
                 if (state.mode === 'note') {
                     if (!text) return;
                     c.messages.push({ note: true, text: text, time: new Date() });
+                    state.stickBottom = true;
                     toast('ההערה נשמרה');
                 } else {
                     if (!text && !state.attachment) return;
                     var msg = { dir: 'out', text: text, time: new Date(), status: 'sent' };
                     if (state.attachment) { msg.media = state.attachment; state.attachment = null; }
                     c.messages.push(msg);
+                    state.stickBottom = true;
                     setTimeout(function () { msg.status = 'delivered'; if (state.selected === c.id) renderThread(); }, 1500);
                     setTimeout(function () { msg.status = 'read'; if (state.selected === c.id) renderThread(); }, 3500);
                 }
@@ -1312,10 +1531,10 @@
                     }
                     send();
                 }
-                if (e.key === 'Escape') quick.classList.remove('show');
+                if (e.key === 'Escape') { quick.classList.remove('show'); emojiPop.classList.remove('show'); }
             };
 
-            input.onblur = function () { setTimeout(function () { quick.classList.remove('show'); }, 100); };
+            input.onblur = function () { setTimeout(function () { quick.classList.remove('show'); emojiPop.classList.remove('show'); }, 100); };
             document.getElementById('sendBtn').onclick = send;
         }
 
@@ -1331,7 +1550,8 @@
                 var upd = function () {
                     var body = t.body;
                     Array.prototype.forEach.call(document.querySelectorAll('#tplVars input'), function (inp) {
-                        body = body.replace('{{' + inp.getAttribute('data-v') + '}}', inp.value || '{{' + inp.getAttribute('data-v') + '}}');
+                        var val = inp.value || '{{' + inp.getAttribute('data-v') + '}}';
+                        body = body.replace('{{' + inp.getAttribute('data-v') + '}}', function () { return val; });
                     });
                     document.getElementById('tplPreview').textContent = body;
                     return body;
@@ -1342,6 +1562,7 @@
                     var empty = Array.prototype.some.call(document.querySelectorAll('#tplVars input'), function (inp) { return !inp.value.trim(); });
                     if (empty) { toast('יש למלא את כל המשתנים בתבנית'); return; }
                     c.messages.push({ dir: 'out', text: upd(), time: new Date(), status: 'sent', srcLabel: 'תבנית: ' + t.label });
+                    state.stickBottom = true;
                     toast('התבנית נשלחה');
                     renderAll();
                 };
@@ -1366,7 +1587,7 @@
                 b.classList.add('active');
                 var k = b.getAttribute('data-due'), d = new Date();
                 if (k === 'none') { due.value = ''; return; }
-                if (k === 'today') d.setHours(Math.max(d.getHours() + 2, 17), 0, 0, 0);
+                if (k === 'today') { var h = Math.max(d.getHours() + 2, 17); if (h > 23) d.setHours(23, 59, 0, 0); else d.setHours(h, 0, 0, 0); }
                 if (k === 'tomorrow') { d.setDate(d.getDate() + 1); d.setHours(10, 0, 0, 0); }
                 if (k === '3d') { d.setDate(d.getDate() + 3); d.setHours(10, 0, 0, 0); }
                 if (k === 'week') { d.setDate(d.getDate() + 7); d.setHours(10, 0, 0, 0); }
@@ -1403,6 +1624,14 @@
             renderAll();
         }
 
+        function isMobile() { return window.matchMedia('(max-width: 760px)').matches; }
+
+        // the user can actually see this conversation right now
+        function threadVisible(id) {
+            return state.view === 'inbox' && state.selected === id &&
+                (!isMobile() || document.getElementById('inbox').classList.contains('show-thread'));
+        }
+
         function focusInput() {
             var i = document.getElementById('msgInput') || document.getElementById('taskTitle');
             if (i) i.focus();
@@ -1427,7 +1656,7 @@
 
                 '<div class="d-sec"><h3>משימות <button id="dAddTask"><i class="fa-solid fa-plus"></i> משימה חדשה</button></h3>' +
                 (ct.length ? ct.map(function (t) {
-                    return '<div class="mini-task"><button class="chk' + (t.done ? ' on' : '') + '" data-toggletask="' + t.id + '"><i class="fa-solid fa-check"></i></button>' +
+                    return '<div class="mini-task"><button class="chk' + (t.done ? ' on' : '') + '" data-toggletask="' + t.id + '" aria-label="' + (t.done ? 'סימון כפתוחה' : 'סימון כבוצעה') + '"><i class="fa-solid fa-check"></i></button>' +
                         '<div><div' + (t.done ? ' style="text-decoration:line-through;color:var(--muted)"' : '') + '>' + esc(t.title) + '</div><div class="t-sub">' + dueLabel(t) + '</div></div></div>';
                 }).join('') : '<span style="color:var(--muted);font-size:13px">אין משימות לאיש הקשר</span>') +
                 '</div>' +
@@ -1459,9 +1688,7 @@
             var b = document.getElementById('optOut');
             if (b) b.onclick = function () {
                 if (!confirm('להסיר את ' + c.name + ' מרשימת התפוצה? לא יישלחו אליו יותר קמפיינים.')) return;
-                c.optedOut = true;
-                toast('איש הקשר הוסר מרשימת התפוצה');
-                renderDetails();
+                optOut(c);
             };
         }
 
@@ -1525,7 +1752,7 @@
                 items.forEach(function (t) {
                     var c = convById(t.convId);
                     html += '<div class="t-row' + (t.done ? ' done' : '') + '">' +
-                        '<button class="chk' + (t.done ? ' on' : '') + '" data-toggletask="' + t.id + '" title="' + (t.done ? 'סימון כפתוחה' : 'סימון כבוצעה') + '"><i class="fa-solid fa-check"></i></button>' +
+                        '<button class="chk' + (t.done ? ' on' : '') + '" data-toggletask="' + t.id + '" title="' + (t.done ? 'סימון כפתוחה' : 'סימון כבוצעה') + '" aria-label="' + (t.done ? 'סימון כפתוחה' : 'סימון כבוצעה') + '"><i class="fa-solid fa-check"></i></button>' +
                         '<div class="t-main"><div class="t-title">' + esc(t.title) + '</div>' +
                         '<div class="t-sub">' +
                         '<span class="contact-link" data-openconv="' + c.id + '"><i class="' + (c.channel === 'wa' ? 'fa-brands fa-whatsapp' : 'fa-solid fa-comment-sms') + '"></i> ' + esc(c.name) + '</span>' +
@@ -1533,8 +1760,8 @@
                         (t.done && t.doneAt ? '<span>בוצע ' + t.doneAt.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' }) + '</span>' : '') +
                         '</div></div>' +
                         '<div class="acts">' +
-                        '<button class="icon-btn" data-openconv="' + c.id + '" title="מעבר לשיחה"><i class="fa-regular fa-comments"></i></button>' +
-                        '<button class="icon-btn" data-deltask="' + t.id + '" title="מחיקת משימה"><i class="fa-regular fa-trash-can"></i></button>' +
+                        '<button class="icon-btn" data-openconv="' + c.id + '" title="מעבר לשיחה" aria-label="מעבר לשיחה"><i class="fa-regular fa-comments"></i></button>' +
+                        '<button class="icon-btn" data-deltask="' + t.id + '" title="מחיקת משימה" aria-label="מחיקת משימה"><i class="fa-regular fa-trash-can"></i></button>' +
                         '</div></div>';
                 });
                 html += '</div>';
@@ -1605,6 +1832,8 @@
                 t.classList.toggle('active', t.getAttribute('data-view') === v);
             });
             if (v === 'tasks') renderTasksView();
+            var sel = convById(state.selected);
+            if (sel && sel.unread && threadVisible(sel.id)) { sel.unread = 0; renderList(); }
         }
 
         Array.prototype.forEach.call(document.querySelectorAll('.ttab'), function (t) {
@@ -1621,8 +1850,16 @@
             ib.classList.add('show-thread');
             ib.classList.remove('nothing');
             renderAll();
-            focusInput();
+            if (!isMobile()) focusInput(); // on a phone this would pop the keyboard over the conversation
         }
+
+        // keyboard: Enter or Space opens the focused conversation
+        document.getElementById('convList').onkeydown = function (e) {
+            if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('conv')) {
+                e.preventDefault();
+                openConv(+e.target.getAttribute('data-id'));
+            }
+        };
 
         document.getElementById('convList').onclick = function (e) {
             var p = e.target.closest('[data-pin]');
@@ -1663,11 +1900,22 @@
         setTimeout(function () {
             var c = convs[1];
             c.messages.push({ dir: 'in', text: 'עוד שאלה קטנה, אפשר לקבל את החשבונית גם בתור קישור? למשל www.example.co.il/invoice', time: new Date() });
-            if (state.selected !== c.id) c.unread++;
+            if (!threadVisible(c.id)) c.unread++;
             toast('הודעה חדשה מ' + c.name);
             renderList();
             if (state.selected === c.id) renderThread();
         }, 20000);
+
+        // every minute: refresh reply-window timers, "today"/"late" labels and counts
+        setInterval(function () {
+            renderList();
+            if (state.view === 'tasks') renderTasksView();
+            var c = convById(state.selected);
+            if (!c || c.channel !== 'wa') return;
+            var left = windowLeftMin(c);
+            if ((left > 0) !== state.windowOpen) renderThread(); // window just closed: switch to templates
+            else if (document.getElementById('windowLeft')) document.getElementById('windowLeft').textContent = fmtLeft(left);
+        }, 60000);
 
         buildGPattern();
         renderList();
