@@ -289,18 +289,6 @@ a { color: var(--accent); }
 .msg code.mono, .note code.mono { display: block; padding: 4px 6px; white-space: pre-wrap; text-align: left; }
 .quote { display: block; border-inline-start: 3px solid #0000002e; padding-inline-start: 8px; color: var(--muted); }
 
-.msg .to-task {
-    position: absolute; top: 4px; inset-inline-end: -32px;
-    width: 26px; height: 26px; border-radius: 50%;
-    border: 1px solid var(--border); background: var(--panel); color: var(--task);
-    font-size: 12px; display: none;
-}
-
-.msg.out .to-task { inset-inline-end: auto; inset-inline-start: -32px; }
-.msg:hover .to-task, .msg:focus-within .to-task { display: block; z-index: 1; /* above the hover strip below */ }
-/* invisible strip over the gap to the button: it belongs to the message, so the mouse stays "on" it */
-.msg::after { content: ''; position: absolute; top: 0; bottom: 0; inset-inline-end: -36px; width: 36px; }
-.msg.out::after { inset-inline-end: auto; inset-inline-start: -36px; }
 
 .media-img { display: block; max-width: 260px; width: 100%; border-radius: 6px; margin-bottom: 4px; cursor: zoom-in; }
 
@@ -533,7 +521,6 @@ a { color: var(--accent); }
     .icon-btn .lbl { display: none; }
     .thread-head { gap: 8px; padding: 8px 10px; }
     .msg { max-width: 85%; }
-    .msg .to-task { display: none !important; }
     .messages { padding: 12px; }
     .topbar h1 { display: none; }
     .tasks-view { padding: 12px; }

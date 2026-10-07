@@ -28,7 +28,6 @@ interface Props {
 export function Thread({ conv: c, accountError, setAccountError, taskRequest }: Props) {
   const { state, dispatch, toast, now } = useApp();
   const [mode, setMode] = useState<ComposerMode>('reply');
-  const [taskPrefill, setTaskPrefill] = useState('');
   // the server refused a free-form message (131047) even though our clock said the window was open
   const [forceTemplate, setForceTemplate] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -41,7 +40,7 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
   const stickBottom = useRef(true);
   const keepFromBottom = useRef<number | null>(null);
 
-  useLayoutEffect(() => { if (taskRequest) { setTaskPrefill(''); setMode('task'); } }, [taskRequest]);
+  useLayoutEffect(() => { if (taskRequest) setMode('task'); }, [taskRequest]);
 
   // a new message from the customer reopens the window: drop the server-forced template mode
   const lastIn = c.messages.filter((m) => m.dir === 'in').at(-1)?.id;
@@ -133,7 +132,6 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
 
   const onTask = (title: string, due: Date | null, prio: Priority) => {
     dispatch({ type: 'addTask', task: { convId: c.id, title, due, prio, done: false, created: new Date() } });
-    setTaskPrefill('');
     setMode('reply');
     toast('המשימה נוצרה');
   };
@@ -282,15 +280,14 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
           const m = it.m;
           return (
             <Fragment key={key}>{day}
-              <MessageBubble msg={m} channel={c.channel} onZoom={setZoom} onErrorAction={(a) => onErrorAction(m, a)}
-                onToTask={() => { setTaskPrefill((m.text || m.media?.name || '').replace(/\s+/g, ' ').slice(0, 120)); setMode('task'); }} />
+              <MessageBubble msg={m} channel={c.channel} onZoom={setZoom} onErrorAction={(a) => onErrorAction(m, a)} />
             </Fragment>
           );
         })}
       </div>
 
-      <Composer conv={c} templateOnly={templateOnly} mode={mode} setMode={(m) => { setMode(m); if (m !== 'task') setTaskPrefill(''); }}
-        taskPrefill={taskPrefill} onSend={onSend} onNote={onNote} onTemplate={onTemplate} onTask={onTask}
+      <Composer conv={c} templateOnly={templateOnly} mode={mode} setMode={setMode}
+        onSend={onSend} onNote={onNote} onTemplate={onTemplate} onTask={onTask}
         droppedFile={dropped} onDropHandled={() => setDropped(null)} />
 
       {drag > 0 && canDrop && <div className="drop-hint"><div><Icon name="solid/cloud-arrow-up" /> שחררו כאן כדי לצרף</div></div>}

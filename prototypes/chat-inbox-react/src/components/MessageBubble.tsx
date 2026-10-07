@@ -8,7 +8,6 @@ import { Icon } from './Icon';
 interface Props {
   msg: Message;
   channel: Channel;
-  onToTask: () => void;
   onZoom: (url: string) => void;
   onErrorAction: (a: ErrorAction | 'delete') => void;
 }
@@ -23,13 +22,10 @@ function Tick({ msg }: { msg: Message }) {
   return <span className={'tick' + cls} role="img" title={label} aria-label={label}><Icon name={icon} /></span>;
 }
 
-export function MessageBubble({ msg, channel, onToTask, onZoom, onErrorAction }: Props) {
+export function MessageBubble({ msg, channel, onZoom, onErrorAction }: Props) {
   const failed = msg.status === 'failed';
   return (
     <div className={'msg ' + msg.dir + (failed ? ' failed' : '')}>
-      <button type="button" className="to-task" onClick={onToTask} title="יצירת משימה מההודעה" aria-label="יצירת משימה מההודעה">
-        <Icon name="solid/list-check" />
-      </button>
       {msg.srcLabel && <div className="src"><Icon name="solid/bullhorn" />{msg.srcLabel}</div>}
       {msg.media?.type === 'image' && (
         <button type="button" className="img-btn" onClick={() => onZoom(msg.media!.url)} aria-label={'הגדלת התמונה ' + msg.media.name}>

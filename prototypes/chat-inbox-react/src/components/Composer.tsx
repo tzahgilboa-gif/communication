@@ -17,7 +17,6 @@ interface Props {
   templateOnly: boolean;
   mode: ComposerMode;
   setMode: (m: ComposerMode) => void;
-  taskPrefill: string;
   onSend: (text: string, attachment: Attachment | null) => void;
   onNote: (text: string) => void;
   onTemplate: (t: Template, vars: string[]) => void;
@@ -40,7 +39,7 @@ export function Composer(p: Props) {
     </>
   );
 
-  if (p.mode === 'task') return <TaskForm tabs={tabs} prefill={p.taskPrefill} onSave={p.onTask} />;
+  if (p.mode === 'task') return <TaskForm tabs={tabs} onSave={p.onTask} />;
   if (p.mode === 'reply' && p.templateOnly) return <TemplateBox tabs={tabs} conv={p.conv} onSend={p.onTemplate} />;
   return <TextBox {...p} tabs={tabs} />;
 }
@@ -225,20 +224,17 @@ function TextBox(p: Props & { tabs: React.ReactNode }) {
 
 // ---------------------------------------------------------------- task
 
-function TaskForm({ tabs, prefill, onSave }: { tabs: React.ReactNode; prefill: string; onSave: Props['onTask'] }) {
+function TaskForm({ tabs, onSave }: { tabs: React.ReactNode; onSave: Props['onTask'] }) {
   const { toast, isMobile } = useApp();
-  const [title, setTitle] = useState(prefill);
+  const [title, setTitle] = useState('');
   const [due, setDue] = useState('');
   const [chip, setChip] = useState('none');
   const [prio, setPrio] = useState<Priority>('normal');
   const titleRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setTitle(prefill); }, [prefill]);
   useEffect(() => {
-    if (isMobile && !prefill) return;
-    titleRef.current?.focus();
-    if (prefill) titleRef.current?.select();
-  }, [prefill, isMobile]);
+    if (!isMobile) titleRef.current?.focus(); // on a phone this would pop the keyboard
+  }, [isMobile]);
 
   const pick = (k: string) => {
     setChip(k);
