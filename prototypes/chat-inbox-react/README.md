@@ -10,7 +10,32 @@ npm test           # unit tests (formatting, SMS billing, file checks, errors, s
 npm run build      # typecheck + dist/chat-inbox.js
 ```
 
-## Adding it to a page
+## Opening it in its own window
+
+`npm run build` also copies the script to `page/`. Put the three files of `page/` on the server:
+
+| File | What |
+|---|---|
+| `inbox.html` | The page: company logo and name at the top, the inbox below |
+| `chat-inbox.js` | The app |
+| `logo.svg` | **Placeholder**: replace with the real logo (and the name in `inbox.html`) |
+
+In `inbox.html` the server prints the account's `intSmsFactor` from the DB into the `mount` call.
+
+The existing system opens it from a button (`examples/open-from-jquery.html`):
+
+```js
+$('#openInbox').on('click', function () {
+  var w = window.open('/inbox/inbox.html', 'chat-inbox', 'width=1300,height=850');
+  if (!w) { alert('הדפדפן חסם את החלון. אשרו חלונות קופצים לאתר הזה ונסו שוב.'); return; }
+  w.focus();
+});
+```
+
+The window name `chat-inbox` means a second click brings the open window to the front instead of
+opening another one. `window.open` must run inside the click handler, or the browser blocks it.
+
+## Adding it to an existing page instead
 
 Copy `dist/chat-inbox.js` to the server and add three things to the one page that needs it:
 

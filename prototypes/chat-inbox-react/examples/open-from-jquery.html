@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>דוגמה: פתיחת תיבת השיחות בחלון חדש</title>
+</head>
+<body>
+  <!-- in the existing system: one button, nothing else changes on the page -->
+  <button type="button" id="openInbox">תיבת שיחות</button>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script>
+    $('#openInbox').on('click', function () {
+      // the same window name reuses an open inbox window instead of opening another one
+      var w = window.open('../page/inbox.html', 'chat-inbox', 'width=1300,height=850');
+      if (!w) { alert('הדפדפן חסם את החלון. אשרו חלונות קופצים לאתר הזה ונסו שוב.'); return; }
+      w.focus();
+    });
+  </script>
+</body>
+</html>
