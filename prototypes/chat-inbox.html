@@ -95,13 +95,6 @@
 
         .count.alert { background: var(--danger); color: #fff; }
 
-        .quota { margin-inline-start: auto; font-size: 12px; border-radius: 10px; padding: 2px 10px; background: var(--wa-soft); color: var(--wa); white-space: nowrap; }
-        .quota.low { background: var(--warn-soft); color: var(--warn); }
-        .quota.over { background: var(--danger-soft); color: var(--danger); }
-        .quota + .live { margin-inline-start: 12px; }
-        #counter.low { color: var(--warn); font-weight: 500; }
-        #counter.over { color: var(--danger); font-weight: 500; }
-
         .load-older { align-self: center; margin: 4px 0 8px; }
         .load-older button { border: 1px solid var(--border); background: #ffffffe6; color: var(--accent); border-radius: 16px; height: 30px; padding: 0 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
         .load-older button:disabled { color: var(--muted); cursor: default; }
@@ -529,7 +522,6 @@
             .msg .to-task { display: none !important; }
             .messages { padding: 12px; }
             .topbar h1 { display: none; }
-            .quota { display: none; }
             .tasks-view { padding: 12px; }
             .tasks-toolbar .search { width: 100%; }
         }
@@ -543,7 +535,6 @@
         <h1>תיבת שיחות</h1>
         <button class="ttab active" data-view="inbox"><i class="fa-regular fa-comments"></i> שיחות <span class="count" id="cntUnread"></span></button>
         <button class="ttab" data-view="tasks"><i class="fa-solid fa-list-check"></i> משימות <span class="count" id="cntTasks" title="משימות פתוחות"></span><span class="count alert" id="cntLate" title="משימות באיחור"></span></button>
-        <span class="quota" id="waQuota" title="הודעות שירות ב-WhatsApp (תשובות רגילות, לא תבניות) החודש. מעבר ל-1,000 בחודש כל הודעה מחויבת"></span>
         <span class="live" title="הנתונים מתעדכנים אוטומטית">מתעדכן אוטומטית</span>
     </div>
 
@@ -823,28 +814,10 @@
         };
 
         // account settings, loaded from the DB. The server sets them in a script tag before this one:
-        //   window.ACCOUNT = { intSmsFactor: 3, waServiceUsed: 640, waServiceFree: 1000 };
+        //   window.ACCOUNT = { intSmsFactor: 3 };
         // intSmsFactor = how many SMS segments are billed as one message (1 = every segment is a message)
-        // waServiceUsed = WhatsApp service messages (free-form replies) delivered this calendar month from this
-        //   business number. Meta has no ready counter for this: the server counts status webhooks whose
-        //   pricing.category is "service", and can reconcile against the pricing_analytics API.
-        // waServiceFree = Meta's free monthly tier per business number (1,000 since 1 October 2026)
-        var account = window.ACCOUNT || { intSmsFactor: 3, waServiceUsed: 962, waServiceFree: 1000 }; // prototype sample values
+        var account = window.ACCOUNT || { intSmsFactor: 3 }; // prototype sample value
         var SMS_FACTOR = Math.max(1, parseInt(account.intSmsFactor, 10) || 1);
-        var WA_FREE = Math.max(0, parseInt(account.waServiceFree, 10) || 0);
-        account.waServiceUsed = Math.max(0, parseInt(account.waServiceUsed, 10) || 0);
-
-        // "640 / 1,000" status for the next WhatsApp free-form reply
-        function waQuota() {
-            var used = account.waServiceUsed, left = WA_FREE - used;
-            return {
-                used: used, left: left,
-                level: left <= 0 ? 'over' : (left <= WA_FREE * 0.1 ? 'low' : 'ok'),
-                text: left <= 0
-                    ? 'המכסה החינמית נוצלה · ההודעה תחויב'
-                    : 'הודעת שירות · נשארו ' + left.toLocaleString('he-IL') + ' מתוך ' + WA_FREE.toLocaleString('he-IL') + ' חינם החודש'
-            };
-        }
 
         var MAX_PINS = 3;
         // emoji picker, grouped like phone keyboards
@@ -1629,11 +1602,7 @@
                     if (state.attachment) { msg.media = state.attachment; state.attachment = null; }
                     c.messages.push(msg);
                     state.stickBottom = true;
-                    setTimeout(function () {
-                        msg.status = 'delivered';
-                        if (c.channel === 'wa') { account.waServiceUsed++; renderCounts(); } // free-form WhatsApp reply = service message
-                        if (state.selected === c.id) renderThread();
-                    }, 1500);
+                    setTimeout(function () { msg.status = 'delivered'; if (state.selected === c.id) renderThread(); }, 1500);
                     setTimeout(function () { msg.status = 'read'; if (state.selected === c.id) renderThread(); }, 3500);
                 }
                 c.unread = 0;
@@ -1667,11 +1636,7 @@
                 if (state.mode === 'reply' && input.value.indexOf('/') === 0) showQuick(input.value.slice(1));
                 else quick.classList.remove('show');
                 var counter = document.getElementById('counter');
-                if (counter) {
-                    if (c.channel === 'sms') { counter.textContent = smsParts(input.value); counter.className = ''; }
-                    else if (state.mode === 'reply') { var q = waQuota(); counter.textContent = q.text; counter.className = q.level; }
-                    else { counter.textContent = ''; counter.className = ''; }
-                }
+                if (counter) counter.textContent = c.channel === 'sms' ? smsParts(input.value) : '';
             };
 
             input.onkeydown = function (e) {
@@ -1697,7 +1662,7 @@
 
             input.onblur = function () { setTimeout(function () { quick.classList.remove('show'); }, 100); };
             document.getElementById('sendBtn').onclick = send;
-            input.oninput(); // show the SMS / WhatsApp cost line right away
+            input.oninput(); // show the SMS cost line right away
         }
 
         function bindTemplate(c, tplSelect) {
@@ -1967,11 +1932,6 @@
         // global
         // ======================================================================
         function renderCounts() {
-            var q = waQuota(), wq = document.getElementById('waQuota');
-            wq.className = 'quota ' + q.level;
-            wq.innerHTML = '<i class="fa-brands fa-whatsapp"></i> ' + (q.left <= 0
-                ? 'מעל המכסה החינמית: ' + (q.used - WA_FREE === 1 ? 'הודעה אחת' : (q.used - WA_FREE).toLocaleString('he-IL') + ' הודעות') + ' לחיוב'
-                : 'שירות: ' + q.used.toLocaleString('he-IL') + ' / ' + WA_FREE.toLocaleString('he-IL') + ' חינם');
             var unread = convs.reduce(function (s, c) { return s + (c.unread ? 1 : 0); }, 0);
             var open = tasks.filter(function (t) { return !t.done; });
             var late = open.filter(function (t) { return taskState(t) === 'late'; }).length;
