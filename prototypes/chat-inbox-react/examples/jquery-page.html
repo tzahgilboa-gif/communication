@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>דוגמה: תיבת שיחות בתוך דף jQuery קיים</title>
+  <style>
+    /* stands in for the existing system's CSS, including rules that would clash with the inbox */
+    body { margin: 0; font-family: Tahoma, sans-serif; color: #333; line-height: 1.8; letter-spacing: .5px; }
+    .site-header { background: #2c3e50; color: #fff; height: 56px; display: flex; align-items: center; gap: 16px; padding: 0 16px; }
+    .site-header button { background: #e67e22; color: #fff; border: 0; padding: 6px 12px; }
+    button { background: #c0392b; font-size: 18px; }
+    .badge { background: #8e44ad; padding: 2px 8px; }
+    .toast { display: none; }
+    .chip { font-size: 24px; }
+    /* the page decides how much room the inbox gets */
+    #chat-inbox { height: calc(100vh - 56px); height: calc(100dvh - 56px); }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <strong>המערכת שלנו</strong>
+    <button type="button" id="hostBtn">כפתור של המערכת</button>
+    <span class="badge" id="hostBadge">3</span>
+  </header>
+
+  <!-- the only additions on this page: the element, the script, and the mount call -->
+  <div id="chat-inbox"></div>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="../dist/chat-inbox.js"></script>
+  <script>
+    $(function () {
+      // intSmsFactor comes from the DB, printed by the server into the page
+      ChatInbox.mount($('#chat-inbox')[0], { intSmsFactor: 3, demo: true });
+    });
+  </script>
+</body>
+</html>

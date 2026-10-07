@@ -3,6 +3,7 @@ import { fmtSize, hhmm } from '../lib/dates';
 import { RichText } from '../lib/richText';
 import type { ErrorAction } from '../lib/errors';
 import { ErrorPanel } from './ErrorPanel';
+import { Icon } from './Icon';
 
 interface Props {
   msg: Message;
@@ -13,13 +14,13 @@ interface Props {
 }
 
 function Tick({ msg }: { msg: Message }) {
-  switch (msg.status) {
-    case 'sending': return <i className="fa-regular fa-clock tick" title="בשליחה..." aria-label="בשליחה" />;
-    case 'read': return <i className="fa-solid fa-check-double tick read" title="נקרא" aria-label="נקרא" />;
-    case 'delivered': return <i className="fa-solid fa-check-double tick" title="נמסר" aria-label="נמסר" />;
-    case 'failed': return <i className="fa-solid fa-circle-exclamation tick failed" title="נכשל" aria-label="נכשל" />;
-    default: return <i className="fa-solid fa-check tick" title="נשלח" aria-label="נשלח" />;
-  }
+  const [icon, label, cls] =
+    msg.status === 'sending' ? ['regular/clock', 'בשליחה', ''] :
+    msg.status === 'read' ? ['solid/check-double', 'נקרא', ' read'] :
+    msg.status === 'delivered' ? ['solid/check-double', 'נמסר', ''] :
+    msg.status === 'failed' ? ['solid/circle-exclamation', 'נכשל', ' failed'] :
+    ['solid/check', 'נשלח', ''];
+  return <span className={'tick' + cls} role="img" title={label} aria-label={label}><Icon name={icon} /></span>;
 }
 
 export function MessageBubble({ msg, channel, onToTask, onZoom, onErrorAction }: Props) {
@@ -27,9 +28,9 @@ export function MessageBubble({ msg, channel, onToTask, onZoom, onErrorAction }:
   return (
     <div className={'msg ' + msg.dir + (failed ? ' failed' : '')}>
       <button type="button" className="to-task" onClick={onToTask} title="יצירת משימה מההודעה" aria-label="יצירת משימה מההודעה">
-        <i className="fa-solid fa-list-check" />
+        <Icon name="solid/list-check" />
       </button>
-      {msg.srcLabel && <div className="src"><i className="fa-solid fa-bullhorn" />{msg.srcLabel}</div>}
+      {msg.srcLabel && <div className="src"><Icon name="solid/bullhorn" />{msg.srcLabel}</div>}
       {msg.media?.type === 'image' && (
         <button type="button" className="img-btn" onClick={() => onZoom(msg.media!.url)} aria-label={'הגדלת התמונה ' + msg.media.name}>
           <img className="media-img" src={msg.media.url} alt={msg.media.name} />
@@ -37,7 +38,7 @@ export function MessageBubble({ msg, channel, onToTask, onZoom, onErrorAction }:
       )}
       {msg.media?.type === 'pdf' && (
         <a className="media-file" href={msg.media.url} target="_blank" rel="noopener noreferrer">
-          <i className="fa-regular fa-file-pdf" />
+          <Icon name="regular/file-pdf" />
           <div>
             <div className="fn">{msg.media.name}</div>
             <div className="fs">PDF{msg.media.size ? ' · ' + fmtSize(msg.media.size) : ''}</div>

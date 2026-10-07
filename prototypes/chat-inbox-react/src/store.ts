@@ -133,6 +133,8 @@ export interface AppCtx {
   /** current time, refreshed every minute so labels and timers stay correct */
   now: Date;
   isMobile: boolean;
+  /** intSmsFactor from the account: SMS segments billed as one message */
+  smsFactor: number;
 }
 
 export const Ctx = createContext<AppCtx | null>(null);

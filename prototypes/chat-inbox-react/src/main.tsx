@@ -1,10 +1,4 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App';
-import './styles.css';
+// Dev server only (npm run dev): mounts the demo the same way a host page would.
+import { mount } from './embed';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+mount(document.getElementById('root')!, { intSmsFactor: 3, demo: true });

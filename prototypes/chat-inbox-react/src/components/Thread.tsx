@@ -11,6 +11,8 @@ import { DueLabel, PrioTag } from '../lib/tasks';
 import { MessageBubble } from './MessageBubble';
 import { Composer } from './Composer';
 import { Avatar } from './Avatar';
+import { ConfirmButton } from './ConfirmButton';
+import { Icon } from './Icon';
 
 interface Props {
   conv: Conversation;
@@ -184,7 +186,7 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
       }}>
       <div className="thread-head">
         <button type="button" className="icon-btn back" onClick={() => dispatch({ type: 'back' })} title="חזרה לרשימה" aria-label="חזרה לרשימה">
-          <i className="fa-solid fa-arrow-right" />
+          <Icon name="solid/arrow-right" />
         </button>
         <Avatar name={c.name} />
         <div className="who">
@@ -192,36 +194,36 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
           <div className="sub"><span className="ltr">{c.phone}</span> · {c.channel === 'wa' ? 'WhatsApp' : 'SMS'}</div>
         </div>
         <button type="button" className={'icon-btn' + (c.pin ? ' on' : '')} onClick={togglePin} title={c.pin ? 'ביטול הצמדה' : 'הצמדה למעלה'} aria-label={c.pin ? 'ביטול הצמדה' : 'הצמדה למעלה'}>
-          <i className="fa-solid fa-thumbtack" /><span className="lbl">{c.pin ? 'מוצמדת ' + c.pin : 'הצמדה'}</span>
+          <Icon name="solid/thumbtack" /><span className="lbl">{c.pin ? 'מוצמדת ' + c.pin : 'הצמדה'}</span>
         </button>
         <button type="button" className="icon-btn" onClick={() => { dispatch({ type: 'toggleStatus', convId: c.id }); toast(c.status === 'open' ? 'השיחה סומנה כסגורה' : 'השיחה נפתחה מחדש'); }}>
           {c.status === 'open'
-            ? <><i className="fa-solid fa-check" /><span className="lbl">סימון כסגורה</span></>
-            : <><i className="fa-solid fa-rotate-left" /><span className="lbl">פתיחה מחדש</span></>}
+            ? <><Icon name="solid/check" /><span className="lbl">סימון כסגורה</span></>
+            : <><Icon name="solid/rotate-left" /><span className="lbl">פתיחה מחדש</span></>}
         </button>
         <button type="button" className="icon-btn" onClick={() => dispatch({ type: 'toggleDetails' })} title="פרטי איש קשר" aria-label="פרטי איש קשר">
-          <i className="fa-regular fa-id-card" />
+          <Icon name="regular/id-card" />
         </button>
       </div>
 
       {accountError && (
         <div className="window-bar account-err" role="alert">
-          <i className="fa-solid fa-triangle-exclamation" />
+          <Icon name="solid/triangle-exclamation" />
           <span><b>{errorInfo(accountError).title}.</b> {errorInfo(accountError).todo}</span>
           <button type="button" onClick={() => setAccountError(null)}>הבנתי</button>
         </div>
       )}
       {c.channel === 'sms' ? (
-        <div className="window-bar sms"><i className="fa-solid fa-comment-sms" /><span>שיחת SMS · אין שליחת קבצים</span></div>
+        <div className="window-bar sms"><Icon name="solid/comment-sms" /><span>שיחת SMS · אין שליחת קבצים</span></div>
       ) : templateOnly ? (
-        <div className="window-bar closed"><i className="fa-solid fa-lock" /><span>עברו 24 שעות מההודעה האחרונה של הלקוח · אפשר לשלוח רק תבנית מאושרת</span></div>
+        <div className="window-bar closed"><Icon name="solid/lock" /><span>עברו 24 שעות מההודעה האחרונה של הלקוח · אפשר לשלוח רק תבנית מאושרת</span></div>
       ) : (
-        <div className="window-bar open"><i className="fa-regular fa-clock" /><span>חלון המענה פתוח · אפשר לשלוח הודעות רגילות וקבצים, לא רק תבניות, עוד {fmtLeft(left ?? 0)} שעות</span></div>
+        <div className="window-bar open"><Icon name="regular/clock" /><span>חלון המענה פתוח · אפשר לשלוח הודעות רגילות וקבצים, לא רק תבניות, עוד {fmtLeft(left ?? 0)} שעות</span></div>
       )}
       {c.optedOut ? (
-        <div className="window-bar optout"><i className="fa-solid fa-ban" /><span>הלקוח הוסר מרשימת התפוצה · מותר לשלוח לו רק הודעות שירות, לא פרסום</span></div>
+        <div className="window-bar optout"><Icon name="solid/ban" /><span>הלקוח הוסר מרשימת התפוצה · מותר לשלוח לו רק הודעות שירות, לא פרסום</span></div>
       ) : asksOptOut(c) && (
-        <div className="window-bar suggest"><i className="fa-solid fa-circle-exclamation" /><span>הלקוח ביקש הסרה מדיוור</span>
+        <div className="window-bar suggest"><Icon name="solid/circle-exclamation" /><span>הלקוח ביקש הסרה מדיוור</span>
           <button type="button" onClick={optOut}>הסרה מרשימת התפוצה</button>
         </div>
       )}
@@ -230,7 +232,7 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
         {c.older.length ? (
           <div className="load-older">
             <button type="button" onClick={loadOlder} disabled={loadingOlder}>
-              {loadingOlder ? <><i className="fa-solid fa-spinner fa-spin" /> טוען הודעות...</> : <><i className="fa-solid fa-clock-rotate-left" /> טעינת הודעות קודמות</>}
+              {loadingOlder ? <><Icon name="solid/spinner" spin /> טוען הודעות...</> : <><Icon name="solid/clock-rotate-left" /> טעינת הודעות קודמות</>}
             </button>
           </div>
         ) : <div className="history-start">תחילת השיחה</div>}
@@ -242,7 +244,14 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
           if (it.kind === 'note') {
             return (
               <Fragment key={key}>{day}
-                <div className="note"><div className="src"><i className="fa-regular fa-note-sticky" /> הערה פנימית · {hhmm(it.time)}</div><RichText text={it.m.text} /></div>
+                <div className="note">
+                  <div className="src"><Icon name="regular/note-sticky" /> הערה פנימית · {hhmm(it.time)}</div>
+                  <RichText text={it.m.text} />
+                  <ConfirmButton className="note-del" label="מחיקת ההערה" confirmText="למחוק?"
+                    onConfirm={() => { dispatch({ type: 'removeMessage', convId: c.id, msgId: it.m.id }); toast('ההערה נמחקה'); }}>
+                    <Icon name="regular/trash-can" />
+                  </ConfirmButton>
+                </div>
               </Fragment>
             );
           }
@@ -253,11 +262,11 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
                 <div className={'task-card' + (t.done ? ' done' : '')}>
                   <button type="button" className={'chk' + (t.done ? ' on' : '')} onClick={() => dispatch({ type: 'toggleTask', id: t.id })}
                     title={t.done ? 'סימון כפתוחה' : 'סימון כבוצעה'} aria-label={t.done ? 'סימון כפתוחה' : 'סימון כבוצעה'}>
-                    <i className="fa-solid fa-check" />
+                    <Icon name="solid/check" />
                   </button>
                   <div>
                     <div className="t-title">{t.title}</div>
-                    <div className="t-sub"><span><i className="fa-solid fa-list-check" /> משימה</span><DueLabel task={t} now={now} /><PrioTag prio={t.prio} /></div>
+                    <div className="t-sub"><span><Icon name="solid/list-check" /> משימה</span><DueLabel task={t} now={now} /><PrioTag prio={t.prio} /></div>
                   </div>
                 </div>
               </Fragment>
@@ -277,7 +286,7 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
         taskPrefill={taskPrefill} onSend={onSend} onNote={onNote} onTemplate={onTemplate} onTask={onTask}
         droppedFile={dropped} onDropHandled={() => setDropped(null)} />
 
-      {drag > 0 && canDrop && <div className="drop-hint"><div><i className="fa-solid fa-cloud-arrow-up" /> שחררו כאן כדי לצרף</div></div>}
+      {drag > 0 && canDrop && <div className="drop-hint"><div><Icon name="solid/cloud-arrow-up" /> שחררו כאן כדי לצרף</div></div>}
       {zoom && <Lightbox url={zoom} onClose={() => setZoom(null)} />}
     </main>
   );

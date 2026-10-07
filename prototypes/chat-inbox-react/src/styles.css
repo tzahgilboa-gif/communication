@@ -1,4 +1,10 @@
-:root {
+/* Lives inside the component's shadow root (see src/embed.tsx): these rules don't reach the host page,
+   and the host page's CSS doesn't reach in. :host is the element the app is mounted on. */
+:host {
+    all: initial; /* don't inherit the host page's font, color, line-height or direction */
+    display: block;
+    height: 100%;
+    min-height: 480px;
     --bg: #f0f2f5;
     --panel: #ffffff;
     --border: #e3e6ea;
@@ -28,16 +34,26 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body { height: 100%; }
-
-body {
-    font-family: 'Heebo', Arial, sans-serif;
+.ci-app {
+    font-family: var(--ci-font, 'Heebo', Arial, sans-serif);
     font-size: 14px;
     color: var(--text);
     background: var(--bg);
-    height: 100vh;
-    height: 100dvh; /* mobile: excludes the browser's address bar */
+    height: 100%;
     overflow: hidden;
+    position: relative;
+    text-align: start;
+    /* inherited properties: the page's rules on the host element beat :host, so reset them here */
+    line-height: normal;
+    font-weight: 400;
+    font-style: normal;
+    letter-spacing: normal;
+    word-spacing: normal;
+    text-transform: none;
+    text-indent: 0;
+    text-shadow: none;
+    white-space: normal;
+    visibility: visible;
     display: flex;
     flex-direction: column;
 }
@@ -110,7 +126,7 @@ a { color: var(--accent); }
 .list-head { padding: 12px 14px 8px; border-bottom: 1px solid var(--border); }
 
 .search { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 8px; padding: 0 10px; height: 36px; }
-.search i { color: var(--muted); }
+.search .ico { color: var(--muted); }
 .search input { border: 0; background: transparent; outline: none; width: 100%; }
 
 .filters { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
@@ -183,9 +199,10 @@ a { color: var(--accent); }
 .conv:hover .pin-btn { display: block; }
 
 /* touch screens have no hover: always show the pin button */
+/* room for the pin button, which shows on hover (and always on touch screens) */
+.conv:not(.pinned) .conv-time { margin-inline-end: 30px; }
 @media (hover: none) {
     .pin-btn { display: block; }
-    .conv:not(.pinned) .conv-time { margin-inline-end: 30px; }
 }
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -233,7 +250,7 @@ a { color: var(--accent); }
 .icon-btn:hover { background: #f5f6f8; }
 .icon-btn.back { display: none; }
 .icon-btn.on { color: var(--pin); border-color: var(--pin-border); background: var(--pin-soft); }
-.sec-label .fa-thumbtack { color: var(--pin); }
+.sec-label .ico { color: var(--pin); }
 
 .window-bar { font-size: 13px; padding: 6px 16px; display: flex; align-items: center; gap: 8px; }
 .window-bar.open { background: var(--wa-soft); color: var(--wa); }
@@ -290,7 +307,7 @@ a { color: var(--accent); }
     text-decoration: none; color: var(--text); min-width: 220px;
 }
 
-.media-file i { font-size: 26px; color: #d93025; }
+.media-file .ico { font-size: 26px; color: #d93025; }
 .media-file .fn { font-weight: 500; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
 .media-file .fs { font-size: 11px; color: var(--muted); }
 
@@ -348,7 +365,7 @@ a { color: var(--accent); }
 
 .round-btn { width: 42px; height: 42px; border-radius: 50%; border: 0; flex-shrink: 0; font-size: 16px; }
 .send-btn { background: var(--accent); color: #fff; }
-.send-btn i { transform: scaleX(-1); }
+.send-btn .ico { transform: scaleX(-1); }
 .composer.note-mode .send-btn { background: #b89500; }
 .attach-btn { background: var(--bg); color: var(--muted); }
 .attach-btn:hover { color: var(--accent); }
@@ -428,7 +445,7 @@ a { color: var(--accent); }
 .primary.task { background: var(--task); }
 
 .thread-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 10px; }
-.thread-empty i { font-size: 46px; color: #c3ccd6; }
+.thread-empty .ico { font-size: 46px; color: #c3ccd6; }
 
 /* ---------- details panel ---------- */
 .details { background: var(--panel); border-inline-start: 1px solid var(--border); overflow-y: auto; min-height: 0; }
@@ -520,7 +537,6 @@ a { color: var(--accent); }
     .tasks-toolbar .search { width: 100%; }
 }
 
-#root { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
 
 /* ---------- React port additions ---------- */
 .avatar.big { width: 64px; height: 64px; font-size: 22px; margin: 0 auto 8px; }
@@ -555,3 +571,19 @@ a { color: var(--accent); }
 .err-code { font-size: 11px; color: var(--muted); margin-inline-start: auto; direction: ltr; }
 .window-bar.account-err { background: var(--danger); color: #fff; }
 .window-bar.account-err button { color: #fff; background: transparent; border-color: #fff; }
+
+/* inline SVG icons (src/components/Icon.tsx) */
+.ico { display: inline-block; vertical-align: -0.125em; flex-shrink: 0; }
+.ico.spin { animation: ci-spin 1s linear infinite; }
+@keyframes ci-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ico.spin { animation-duration: 3s; } }
+.tick { display: inline-flex; }
+
+/* deleting an internal note */
+.note { position: relative; }
+.note .note-del { position: absolute; top: 4px; inset-inline-end: 4px; border: 0; background: transparent; color: #8a7400; font-size: 12px; height: 22px; padding: 0 6px; border-radius: 4px; opacity: 0; }
+.note:hover .note-del, .note:focus-within .note-del, .note .note-del.asking { opacity: 1; }
+.note .note-del:hover { background: #f3e7a5; }
+.note .note-del.asking { background: var(--danger); color: #fff; }
+@media (hover: none) { .note .note-del { opacity: 1; } }
+.note .src { padding-inline-end: 28px; }

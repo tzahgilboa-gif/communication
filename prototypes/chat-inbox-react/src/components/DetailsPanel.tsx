@@ -3,6 +3,7 @@ import { useApp } from '../store';
 import { DueLabel } from '../lib/tasks';
 import { Avatar } from './Avatar';
 import { ConfirmButton } from './ConfirmButton';
+import { Icon } from './Icon';
 
 export function DetailsPanel({ conv: c, onNewTask }: { conv: Conversation; onNewTask: () => void }) {
   const { state, dispatch, toast, now } = useApp();
@@ -19,11 +20,11 @@ export function DetailsPanel({ conv: c, onNewTask }: { conv: Conversation; onNew
         <div className="phone"><span className="ltr">{c.phone}</span></div>
       </div>
       <div className="d-sec">
-        <h3>משימות <button type="button" onClick={onNewTask}><i className="fa-solid fa-plus" /> משימה חדשה</button></h3>
+        <h3>משימות <button type="button" onClick={onNewTask}><Icon name="solid/plus" /> משימה חדשה</button></h3>
         {tasks.length ? tasks.map((t) => (
           <div key={t.id} className="mini-task">
             <button type="button" className={'chk' + (t.done ? ' on' : '')} onClick={() => dispatch({ type: 'toggleTask', id: t.id })}
-              aria-label={t.done ? 'סימון כפתוחה' : 'סימון כבוצעה'}><i className="fa-solid fa-check" /></button>
+              aria-label={t.done ? 'סימון כפתוחה' : 'סימון כבוצעה'}><Icon name="solid/check" /></button>
             <div>
               <div className={t.done ? 'done-text' : ''}>{t.title}</div>
               <div className="t-sub"><DueLabel task={t} now={now} /></div>
@@ -47,11 +48,11 @@ export function DetailsPanel({ conv: c, onNewTask }: { conv: Conversation; onNew
       <div className="d-sec">
         <h3>הסרה מדיוור</h3>
         {c.optedOut
-          ? <div className="optout-done"><i className="fa-solid fa-ban" /> הוסר מרשימת התפוצה</div>
+          ? <div className="optout-done"><Icon name="solid/ban" /> הוסר מרשימת התפוצה</div>
           : (
             <ConfirmButton className="danger-btn" confirmText="לחצו שוב כדי לאשר את ההסרה"
               onConfirm={() => { dispatch({ type: 'optOut', convId: c.id }); toast('איש הקשר הוסר מרשימת התפוצה'); }}>
-              <i className="fa-solid fa-ban" /> הסרה מרשימת התפוצה
+              <Icon name="solid/ban" /> הסרה מרשימת התפוצה
             </ConfirmButton>
           )}
       </div>

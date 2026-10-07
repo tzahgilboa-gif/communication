@@ -5,6 +5,7 @@ import { fmtLeft, listTime } from '../lib/dates';
 import { lastActivity, lastMsg, windowLeftMin } from '../lib/whatsapp';
 import { openTasksOf, taskState } from '../lib/tasks';
 import { Avatar } from './Avatar';
+import { Icon } from './Icon';
 
 const STATUS: [StatusFilter, string][] = [['all', 'הכל'], ['unread', 'לא נקראו'], ['open', 'פתוחות'], ['closed', 'סגורות']];
 
@@ -14,8 +15,10 @@ export function ConversationList() {
 
   useEffect(() => {
     if (pinMenu === null) return;
+    // composedPath(): inside a shadow root, e.target seen from document is the host element
     const close = (e: MouseEvent) => {
-      if (!(e.target as Element).closest('.pin-menu, .pin-num')) setPinMenu(null);
+      const inside = e.composedPath().some((n) => n instanceof Element && n.matches('.pin-menu, .pin-num'));
+      if (!inside) setPinMenu(null);
     };
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
@@ -41,7 +44,7 @@ export function ConversationList() {
     <aside className="list">
       <div className="list-head">
         <label className="search">
-          <i className="fa-solid fa-magnifying-glass" />
+          <Icon name="solid/magnifying-glass" />
           <input type="search" placeholder="חיפוש לפי שם, מספר או תוכן" aria-label="חיפוש שיחות" value={state.search}
             onChange={(e) => dispatch({ type: 'filter', search: e.target.value })} />
         </label>
@@ -51,15 +54,15 @@ export function ConversationList() {
           ))}
         </div>
         <div className="filters" style={{ marginTop: 6 }}>
-          {([['all', 'כל הערוצים', ''], ['wa', 'WhatsApp', 'fa-brands fa-whatsapp'], ['sms', 'SMS', 'fa-solid fa-comment-sms']] as [ChannelFilter, string, string][]).map(([k, l, icon]) => (
+          {([['all', 'כל הערוצים', ''], ['wa', 'WhatsApp', 'brands/whatsapp'], ['sms', 'SMS', 'solid/comment-sms']] as [ChannelFilter, string, string][]).map(([k, l, icon]) => (
             <button key={k} type="button" className={'chip' + (state.channelFilter === k ? ' active' : '')} onClick={() => dispatch({ type: 'filter', channel: k })}>
-              {icon && <i className={icon} />} {l}
+              {icon && <Icon name={icon} />} {l}
             </button>
           ))}
         </div>
       </div>
       <div className="conv-list">
-        {pinned.length > 0 && <div className="sec-label"><i className="fa-solid fa-thumbtack" /> מוצמדות ({pinned.length}/{MAX_PINS})</div>}
+        {pinned.length > 0 && <div className="sec-label"><Icon name="solid/thumbtack" /> מוצמדות ({pinned.length}/{MAX_PINS})</div>}
         {pinned.map((c) => <ConvItem key={c.id} c={c} pinMenu={pinMenu} setPinMenu={setPinMenu} />)}
         {pinned.length > 0 && rest.length > 0 && <div className="sec-label">כל השיחות</div>}
         {rest.map((c) => <ConvItem key={c.id} c={c} pinMenu={pinMenu} setPinMenu={setPinMenu} />)}
@@ -95,9 +98,9 @@ function ConvItem({ c, pinMenu, setPinMenu }: { c: Conversation; pinMenu: number
           <span className="conv-preview">
             {!lm ? <span className="muted-sm">אין הודעות</span> : (
               <>
-                {lm.status === 'failed' && <i className="fa-solid fa-circle-exclamation failed-ico" />}
-                {lm.dir === 'out' && lm.status !== 'failed' && <i className="fa-solid fa-reply" style={{ fontSize: 10 }} />}{' '}
-                {lm.media && <i className={lm.media.type === 'image' ? 'fa-regular fa-image' : 'fa-regular fa-file-pdf'} />}{' '}
+                {lm.status === 'failed' && <Icon name="solid/circle-exclamation" className="failed-ico" />}
+                {lm.dir === 'out' && lm.status !== 'failed' && <Icon name="solid/reply" style={{ fontSize: 10 }} />}{' '}
+                {lm.media && <Icon name={lm.media.type === 'image' ? 'regular/image' : 'regular/file-pdf'} />}{' '}
                 {lm.status === 'failed' ? 'לא נשלחה: ' : ''}{lm.text || lm.media?.name}
               </>
             )}
@@ -106,18 +109,18 @@ function ConvItem({ c, pinMenu, setPinMenu }: { c: Conversation; pinMenu: number
         </div>
         <div className="conv-meta">
           {c.status === 'closed' && <span className="tag closed">סגורה</span>}
-          {c.optedOut && <span className="tag optout"><i className="fa-solid fa-ban" /> הוסר מדיוור</span>}
-          {left !== null && left > 0 && <span className="tag window"><i className="fa-regular fa-clock" /> חלון פתוח {fmtLeft(left)}</span>}
-          {ot.length > 0 && <span className={'tag tasks' + (late ? ' late' : '')}><i className="fa-solid fa-list-check" /> {ot.length}{late ? ' · באיחור' : ''}</span>}
+          {c.optedOut && <span className="tag optout"><Icon name="solid/ban" /> הוסר מדיוור</span>}
+          {left !== null && left > 0 && <span className="tag window"><Icon name="regular/clock" /> חלון פתוח {fmtLeft(left)}</span>}
+          {ot.length > 0 && <span className={'tag tasks' + (late ? ' late' : '')}><Icon name="solid/list-check" /> {ot.length}{late ? ' · באיחור' : ''}</span>}
         </div>
       </div>
       {c.pin ? (
         <button type="button" className="pin-num" title="שינוי מיקום ההצמדה" aria-label="שינוי מיקום ההצמדה"
           onClick={(e) => { e.stopPropagation(); setPinMenu(pinMenu === c.id ? null : c.id); }}>
-          <i className="fa-solid fa-thumbtack" />{c.pin}
+          <Icon name="solid/thumbtack" />{c.pin}
         </button>
       ) : (
-        <button type="button" className="pin-btn" title="הצמדה למעלה" aria-label="הצמדה למעלה" onClick={pin}><i className="fa-solid fa-thumbtack" /></button>
+        <button type="button" className="pin-btn" title="הצמדה למעלה" aria-label="הצמדה למעלה" onClick={pin}><Icon name="solid/thumbtack" /></button>
       )}
       {pinMenu === c.id && (
         <div className="pin-menu" onClick={(e) => e.stopPropagation()}>
@@ -127,7 +130,7 @@ function ConvItem({ c, pinMenu, setPinMenu }: { c: Conversation; pinMenu: number
             </button>
           ))}
           <button type="button" className="unpin" onClick={() => { dispatch({ type: 'unpin', convId: c.id }); setPinMenu(null); toast('ההצמדה בוטלה'); }}>
-            <i className="fa-solid fa-xmark" /> ביטול הצמדה
+            <Icon name="solid/xmark" /> ביטול הצמדה
           </button>
         </div>
       )}

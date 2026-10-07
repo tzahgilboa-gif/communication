@@ -2,12 +2,12 @@ import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } 
 import type { Attachment, ComposerMode, Conversation, Priority, Template } from '../types';
 import { quickReplies, templates } from '../data/sample';
 import { smsParts } from '../lib/sms';
-import { SMS_FACTOR } from '../lib/account';
 import { checkFile } from '../lib/files';
 import { fmtSize, toLocalInput } from '../lib/dates';
 import { loadRecent, RECENT_MAX, saveRecent } from '../lib/emoji';
 import { useApp } from '../store';
 import { EmojiPicker } from './EmojiPicker';
+import { Icon } from './Icon';
 
 const MAX_LEN = 4096; // WhatsApp text limit
 
@@ -32,10 +32,10 @@ export function Composer(p: Props) {
     <>
       <button type="button" className={'ctab' + (p.mode === 'reply' ? ' active' : '')} onClick={() => p.setMode('reply')}>תשובה ללקוח</button>
       <button type="button" className={'ctab task-tab' + (p.mode === 'task' ? ' active' : '')} onClick={() => p.setMode('task')}>
-        <i className="fa-solid fa-list-check" /> משימה
+        <Icon name="solid/list-check" /> משימה
       </button>
       <button type="button" className={'ctab note-tab' + (p.mode === 'note' ? ' active' : '')} onClick={() => p.setMode('note')}>
-        <i className="fa-regular fa-note-sticky" /> הערה פנימית
+        <Icon name="regular/note-sticky" /> הערה פנימית
       </button>
     </>
   );
@@ -48,7 +48,7 @@ export function Composer(p: Props) {
 // ---------------------------------------------------------------- reply / note
 
 function TextBox(p: Props & { tabs: React.ReactNode }) {
-  const { toast, isMobile } = useApp();
+  const { toast, isMobile, smsFactor } = useApp();
   const note = p.mode === 'note';
   const canAttach = !note && p.conv.channel === 'wa';
   const [text, setText] = useState('');
@@ -83,7 +83,8 @@ function TextBox(p: Props & { tabs: React.ReactNode }) {
 
   useEffect(() => {
     if (!emojiOpen) return;
-    const close = (e: MouseEvent) => { if (!emojiWrap.current?.contains(e.target as Node)) setEmojiOpen(false); };
+    // composedPath(): inside a shadow root, e.target seen from document is the host element
+    const close = (e: MouseEvent) => { if (!emojiWrap.current || !e.composedPath().includes(emojiWrap.current)) setEmojiOpen(false); };
     document.addEventListener('mousedown', close);
     return () => document.removeEventListener('mousedown', close);
   }, [emojiOpen]);
@@ -164,7 +165,7 @@ function TextBox(p: Props & { tabs: React.ReactNode }) {
       <button type="button" title="מודגש" aria-label="מודגש" onClick={() => insertAt('*', '*')}><b>B</b></button>
       <button type="button" title="נטוי" aria-label="נטוי" onClick={() => insertAt('_', '_')}><i>I</i></button>
       <button type="button" title="קו חוצה" aria-label="קו חוצה" onClick={() => insertAt('~', '~')}><s>S</s></button>
-      <button type="button" title="כתב מכונה" aria-label="כתב מכונה" onClick={() => insertAt('```', '```')}><i className="fa-solid fa-code" /></button>
+      <button type="button" title="כתב מכונה" aria-label="כתב מכונה" onClick={() => insertAt('```', '```')}><Icon name="solid/code" /></button>
     </div>
   );
 
@@ -173,9 +174,9 @@ function TextBox(p: Props & { tabs: React.ReactNode }) {
       <div className="composer-tabs">{p.tabs}{fmtBar}</div>
       {att && !note && (
         <div className="att-preview">
-          {att.type === 'image' ? <img src={att.url} alt="" /> : <div className="pdf"><i className="fa-regular fa-file-pdf" /></div>}
+          {att.type === 'image' ? <img src={att.url} alt="" /> : <div className="pdf"><Icon name="regular/file-pdf" /></div>}
           <div className="info"><b>{att.name}</b><span>{fmtSize(att.size)} · נשלח ישירות ל-WhatsApp ולא נשמר אצלנו</span></div>
-          <button type="button" className="x" title="הסרת הקובץ" aria-label="הסרת הקובץ" onClick={() => setAtt(null)}><i className="fa-solid fa-xmark" /></button>
+          <button type="button" className="x" title="הסרת הקובץ" aria-label="הסרת הקובץ" onClick={() => setAtt(null)}><Icon name="solid/xmark" /></button>
         </div>
       )}
       {quick.length > 0 && (
@@ -194,14 +195,14 @@ function TextBox(p: Props & { tabs: React.ReactNode }) {
           {emojiOpen && <EmojiPicker recent={recent} onPick={pickEmoji} />}
           <button type="button" className="round-btn attach-btn" title="אימוג'י" aria-label="אימוג'י" aria-expanded={emojiOpen}
             onMouseDown={(e) => e.preventDefault()} onClick={() => setEmojiOpen((o) => !o)}>
-            <i className="fa-regular fa-face-smile" />
+            <Icon name="regular/face-smile" />
           </button>
         </div>
         {!note && (
           <button type="button" className="round-btn attach-btn" disabled={!canAttach} aria-label="צירוף קובץ"
             title={canAttach ? 'צירוף תמונה (JPG/PNG עד 5MB) או PDF (עד 100MB)' : 'שליחת קבצים זמינה רק ב-WhatsApp'}
             onClick={() => { if (fileInput.current) { fileInput.current.value = ''; fileInput.current.click(); } }}>
-            <i className="fa-solid fa-paperclip" />
+            <Icon name="solid/paperclip" />
           </button>
         )}
         <input ref={fileInput} type="file" hidden accept="image/jpeg,image/png,application/pdf" onChange={(e) => void takeFile(e.target.files?.[0])} />
@@ -209,14 +210,14 @@ function TextBox(p: Props & { tabs: React.ReactNode }) {
           placeholder={note ? 'כתבו הערה לעצמכם...' : att ? 'כיתוב לקובץ (לא חובה)...' : 'כתבו הודעה...'}
           onChange={(e) => { setText(e.target.value); setQuickIdx(0); }} onKeyDown={onKey} onPaste={onPaste} />
         <button type="button" className="round-btn send-btn" onClick={send} title={note ? 'שמירת הערה' : 'שליחה'} aria-label={note ? 'שמירת הערה' : 'שליחה'}>
-          <i className={'fa-solid ' + (note ? 'fa-check' : 'fa-paper-plane')} />
+          <Icon name={note ? 'solid/check' : 'solid/paper-plane'} />
         </button>
       </div>
       <div className="compose-hint">
         {note ? <span>הערה פנימית לא נשלחת ללקוח</span> : (
           <span>Enter לשליחה · Shift+Enter לשורה חדשה · <b>/</b> לתשובות מהירות{canAttach ? ' · אפשר גם לגרור או להדביק תמונה' : ''}</span>
         )}
-        <span id="counter">{!note && p.conv.channel === 'sms' ? smsParts(text, SMS_FACTOR) : ''}</span>
+        <span id="counter">{!note && p.conv.channel === 'sms' ? smsParts(text, smsFactor) : ''}</span>
       </div>
     </div>
   );
@@ -307,7 +308,7 @@ function TemplateBox({ tabs, conv, onSend }: { tabs: React.ReactNode; conv: Conv
     <div className="composer">
       <div className="composer-tabs">{tabs}</div>
       <div className="template-box">
-        <p><i className="fa-solid fa-circle-info" /> מחוץ לחלון 24 השעות WhatsApp מאפשרת לשלוח רק תבנית מאושרת. אחרי שהלקוח יענה, אפשר יהיה לשלוח הודעות רגילות וקבצים.</p>
+        <p><Icon name="solid/circle-info" /> מחוץ לחלון 24 השעות WhatsApp מאפשרת לשלוח רק תבנית מאושרת. אחרי שהלקוח יענה, אפשר יהיה לשלוח הודעות רגילות וקבצים.</p>
         <select aria-label="תבנית" value={idx} onChange={(e) => setIdx(+e.target.value)}>
           {templates.map((x, i) => <option key={x.name} value={i}>{x.label}</option>)}
         </select>

@@ -1,5 +1,6 @@
 import type { Priority, Task } from '../types';
 import { addDays, hhmm, sameDay } from './dates';
+import { Icon } from '../components/Icon';
 
 export type TaskState = 'done' | 'nodate' | 'late' | 'today' | 'tomorrow' | 'later';
 
@@ -22,7 +23,7 @@ export function DueLabel({ task, now }: { task: Task; now: Date }) {
   else txt = d.toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric' }) + ' ' + hhmm(d);
   return (
     <span className={'due' + (s === 'late' ? ' late' : s === 'today' ? ' today' : '')}>
-      <i className="fa-regular fa-calendar" /> {s === 'late' ? 'באיחור · ' : ''}{txt}
+      <Icon name="regular/calendar" /> {s === 'late' ? 'באיחור · ' : ''}{txt}
     </span>
   );
 }

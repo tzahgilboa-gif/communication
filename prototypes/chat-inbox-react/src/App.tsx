@@ -9,6 +9,7 @@ import { ConversationList } from './components/ConversationList';
 import { Thread } from './components/Thread';
 import { DetailsPanel } from './components/DetailsPanel';
 import { TasksView } from './components/TasksView';
+import { Icon } from './components/Icon';
 
 const initial: State = {
   convs: initialConversations, tasks: initialTasks, view: 'inbox', selected: null, mobileThread: false, detailsOpen: true,
@@ -27,7 +28,7 @@ function useIsMobile() {
   return m;
 }
 
-export default function App() {
+export default function App({ smsFactor, demo }: { smsFactor: number; demo: boolean }) {
   const [state, dispatch] = useReducer(reducer, initial);
   const [now, setNow] = useState(() => new Date());
   const [toastText, setToastText] = useState<{ text: string; n: number } | null>(null);
@@ -66,13 +67,14 @@ export default function App() {
 
   // demo: a new inbound message arrives after 20 seconds (in production: pushed over WebSocket/SSE)
   useEffect(() => {
+    if (!demo) return;
     const t = setTimeout(() => {
       dispatch({ type: 'addMessage', convId: 2, msg: { id: newMessageId(), dir: 'in', text: 'עוד שאלה קטנה, אפשר לקבל את החשבונית גם בתור קישור? למשל www.example.co.il/invoice', time: new Date() } });
       if (!visible(2)) dispatch({ type: 'incomingUnread', convId: 2 });
       toast('הודעה חדשה מיוסי כהן');
     }, 20000);
     return () => clearTimeout(t);
-  }, []);
+  }, [demo]);
 
   const conv = state.convs.find((c) => c.id === state.selected) ?? null;
   const unreadConvs = state.convs.filter((c) => c.unread).length;
@@ -82,8 +84,8 @@ export default function App() {
   const layout = 'inbox' + (!conv ? ' nothing' : !state.detailsOpen ? ' no-details' : '') + (state.mobileThread && conv ? ' show-thread' : '');
 
   return (
-    <Ctx.Provider value={{ state, dispatch, toast, now, isMobile }}>
-      <div className="proto-banner">
+    <Ctx.Provider value={{ state, dispatch, toast, now, isMobile, smsFactor }}>
+      {demo && <div className="proto-banner">
         <span>אב-טיפוס לאישור עיצוב · נתוני דוגמה בלבד · שום דבר לא נשלח באמת</span>
         <label className="sim">
           סימולציית שגיאה בשליחה הבאה:
@@ -95,15 +97,15 @@ export default function App() {
             ))}
           </select>
         </label>
-      </div>
+      </div>}
 
       <div className="topbar">
         <h1>תיבת שיחות</h1>
         <button type="button" className={'ttab' + (state.view === 'inbox' ? ' active' : '')} onClick={() => dispatch({ type: 'view', view: 'inbox' })}>
-          <i className="fa-regular fa-comments" /> שיחות {unreadConvs > 0 && <span className="count">{unreadConvs}</span>}
+          <Icon name="regular/comments" /> שיחות {unreadConvs > 0 && <span className="count">{unreadConvs}</span>}
         </button>
         <button type="button" className={'ttab' + (state.view === 'tasks' ? ' active' : '')} onClick={() => dispatch({ type: 'view', view: 'tasks' })}>
-          <i className="fa-solid fa-list-check" /> משימות <span className="count" title="משימות פתוחות">{openTasks.length}</span>
+          <Icon name="solid/list-check" /> משימות <span className="count" title="משימות פתוחות">{openTasks.length}</span>
           {late > 0 && <span className="count alert" title="משימות באיחור">{late} באיחור</span>}
         </button>
         <span className="live" title="הנתונים מתעדכנים אוטומטית">מתעדכן אוטומטית</span>
@@ -116,7 +118,7 @@ export default function App() {
             {conv ? (
               <Thread key={conv.id} conv={conv} accountError={accountError} setAccountError={setAccountError} taskRequest={taskRequest} />
             ) : (
-              <main className="thread"><div className="thread-empty"><i className="fa-regular fa-comments" /><div>בחרו שיחה מהרשימה כדי להתחיל</div></div></main>
+              <main className="thread"><div className="thread-empty"><Icon name="regular/comments" /><div>בחרו שיחה מהרשימה כדי להתחיל</div></div></main>
             )}
             {conv && state.detailsOpen && <DetailsPanel conv={conv} onNewTask={() => setTaskRequest((n) => n + 1)} />}
           </div>

@@ -3,6 +3,7 @@ import { addDays } from '../lib/dates';
 import { DueLabel, PrioTag, taskState, type TaskState } from '../lib/tasks';
 import type { Task } from '../types';
 import { ConfirmButton } from './ConfirmButton';
+import { Icon } from './Icon';
 
 const FILTERS: [TaskFilter, string][] = [['open', 'פתוחות'], ['late', 'באיחור'], ['today', 'להיום'], ['week', 'השבוע'], ['done', 'בוצעו'], ['all', 'הכל']];
 const GROUPS: { key: TaskState; label: string; late?: boolean }[] = [
@@ -49,7 +50,7 @@ export function TasksView() {
         </div>
         <div className="tasks-toolbar">
           <label className="search">
-            <i className="fa-solid fa-magnifying-glass" />
+            <Icon name="solid/magnifying-glass" />
             <input type="search" placeholder="חיפוש משימה או לקוח" aria-label="חיפוש משימות" value={state.taskSearch}
               onChange={(e) => dispatch({ type: 'taskFilter', search: e.target.value })} />
           </label>
@@ -76,12 +77,12 @@ export function TasksView() {
                 return (
                   <div key={t.id} className={'t-row' + (t.done ? ' done' : '')}>
                     <button type="button" className={'chk' + (t.done ? ' on' : '')} onClick={() => dispatch({ type: 'toggleTask', id: t.id })}
-                      aria-label={t.done ? 'סימון כפתוחה' : 'סימון כבוצעה'}><i className="fa-solid fa-check" /></button>
+                      aria-label={t.done ? 'סימון כפתוחה' : 'סימון כבוצעה'}><Icon name="solid/check" /></button>
                     <div className="t-main">
                       <div className="t-title">{t.title}</div>
                       <div className="t-sub">
                         <button type="button" className="contact-link" onClick={() => dispatch({ type: 'open', id: c.id })}>
-                          <i className={c.channel === 'wa' ? 'fa-brands fa-whatsapp' : 'fa-solid fa-comment-sms'} /> {c.name}
+                          <Icon name={c.channel === 'wa' ? 'brands/whatsapp' : 'solid/comment-sms'} /> {c.name}
                         </button>
                         <DueLabel task={t} now={now} /><PrioTag prio={t.prio} />
                         {t.done && t.doneAt && <span>בוצע {t.doneAt.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' })}</span>}
@@ -89,10 +90,10 @@ export function TasksView() {
                     </div>
                     <div className="acts">
                       <button type="button" className="icon-btn" onClick={() => dispatch({ type: 'open', id: c.id })} title="מעבר לשיחה" aria-label="מעבר לשיחה">
-                        <i className="fa-regular fa-comments" />
+                        <Icon name="regular/comments" />
                       </button>
                       <ConfirmButton className="icon-btn" label="מחיקת משימה" confirmText="למחוק?" onConfirm={() => { dispatch({ type: 'deleteTask', id: t.id }); toast('המשימה נמחקה'); }}>
-                        <i className="fa-regular fa-trash-can" />
+                        <Icon name="regular/trash-can" />
                       </ConfirmButton>
                     </div>
                   </div>
