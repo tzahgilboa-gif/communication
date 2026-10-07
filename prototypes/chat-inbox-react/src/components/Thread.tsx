@@ -102,6 +102,7 @@ export function Thread({ conv: c, accountError, setAccountError, taskRequest }: 
     post({ id: newMessageId(), dir: 'out', text, time: new Date(), status: 'sending', media: att ? { type: att.type, url: att.url, name: att.name, size: att.size } : undefined }, true);
 
   const onTemplate = (t: Template, vars: string[]) => {
+    if (c.optedOut && t.category === 'marketing') return toast('אי אפשר לשלוח תבנית שיווקית ללקוח שהוסר מרשימת התפוצה');
     const text = t.body.replace(/\{\{(\d+)\}\}/g, (m, n: string) => vars[+n - 1] ?? m);
     post({ id: newMessageId(), dir: 'out', text, time: new Date(), status: 'sending', srcLabel: 'תבנית: ' + t.label, template: { name: t.name, vars } }, false);
     setForceTemplate(false);

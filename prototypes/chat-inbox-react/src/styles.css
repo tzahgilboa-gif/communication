@@ -597,3 +597,7 @@ a { color: var(--accent); }
 @media (hover: none) { .task-card .edit-task, .mini-task .edit-task { opacity: 1; } }
 .task-card > div:not(.task-edit), .mini-task > div:not(.task-edit) { flex: 1; min-width: 0; }
 .task-card.editing { max-width: 90%; width: 420px; }
+
+/* marketing templates blocked for an opted-out contact */
+.tpl-blocked { margin-top: 8px; font-size: 13px; color: var(--danger); display: flex; gap: 6px; align-items: center; }
+.primary:disabled { opacity: 0.45; cursor: not-allowed; }

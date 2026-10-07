@@ -294,7 +294,11 @@ function TemplateBox({ tabs, conv, onSend }: { tabs: React.ReactNode; conv: Conv
 
   const preview = t.body.replace(/\{\{(\d+)\}\}/g, (m, n: string) => vars[+n - 1] || m);
 
+  // advertising to a contact who opted out is not allowed (Israeli Communications Law, section 30A)
+  const blocked = conv.optedOut && t.category === 'marketing';
+
   const send = () => {
+    if (blocked) return toast('אי אפשר לשלוח תבנית שיווקית ללקוח שהוסר מרשימת התפוצה');
     const vs = Array.from({ length: count }, (_, i) => (vars[i] || '').trim());
     if (vs.some((v) => !v)) return toast('יש למלא את כל המשתנים בתבנית');
     onSend(t, vs);
@@ -306,8 +310,15 @@ function TemplateBox({ tabs, conv, onSend }: { tabs: React.ReactNode; conv: Conv
       <div className="template-box">
         <p><Icon name="solid/circle-info" /> מחוץ לחלון 24 השעות WhatsApp מאפשרת לשלוח רק תבנית מאושרת. אחרי שהלקוח יענה, אפשר יהיה לשלוח הודעות רגילות וקבצים.</p>
         <select aria-label="תבנית" value={idx} onChange={(e) => setIdx(+e.target.value)}>
-          {templates.map((x, i) => <option key={x.name} value={i}>{x.label}</option>)}
+          {templates.map((x, i) => (
+            <option key={x.name} value={i} disabled={conv.optedOut && x.category === 'marketing'}>
+              {x.label} · {x.category === 'marketing' ? 'שיווק' : 'שירות'}{conv.optedOut && x.category === 'marketing' ? ' (חסום: הלקוח הוסר מדיוור)' : ''}
+            </option>
+          ))}
         </select>
+        {conv.optedOut && (
+          <div className="tpl-blocked"><Icon name="solid/ban" /> הלקוח הוסר מרשימת התפוצה, ולכן תבניות שיווק חסומות. אפשר לשלוח רק תבניות שירות.</div>
+        )}
         <div className="tpl-preview">{preview}</div>
         <div className="tpl-vars">
           {Array.from({ length: count }, (_, i) => (
@@ -315,7 +326,7 @@ function TemplateBox({ tabs, conv, onSend }: { tabs: React.ReactNode; conv: Conv
               onChange={(e) => setVars((v) => { const n = [...v]; n[i] = e.target.value; return n; })} />
           ))}
         </div>
-        <div className="tpl-actions"><button type="button" className="primary" onClick={send}>שליחת תבנית</button></div>
+        <div className="tpl-actions"><button type="button" className="primary" onClick={send} disabled={blocked}>שליחת תבנית</button></div>
       </div>
     </div>
   );

@@ -63,6 +63,8 @@ export interface Template {
   name: string;
   label: string;
   body: string;
+  /** WhatsApp template category. Marketing is advertising: blocked for contacts who opted out */
+  category: 'utility' | 'marketing';
 }
 
 export interface QuickReply {

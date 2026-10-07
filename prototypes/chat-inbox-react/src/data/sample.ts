@@ -23,9 +23,10 @@ const sampleImg =
   );
 
 export const templates: Template[] = [
-  { name: 'follow_up', label: 'מעקב אחרי פנייה', body: 'שלום {{1}}, רצינו לבדוק אם הבעיה שפניתם אלינו לגביה נפתרה. נשמח לעזור בכל שאלה.' },
-  { name: 'order_ready', label: 'ההזמנה מוכנה', body: 'היי {{1}}, ההזמנה שלכם מספר {{2}} מוכנה לאיסוף בסניף.' },
-  { name: 'appointment', label: 'תזכורת לפגישה', body: 'שלום {{1}}, תזכורת לפגישה שנקבעה ל-{{2}}. להשיב 1 לאישור או 2 לביטול.' },
+  { name: 'follow_up', label: 'מעקב אחרי פנייה', category: 'utility', body: 'שלום {{1}}, רצינו לבדוק אם הבעיה שפניתם אלינו לגביה נפתרה. נשמח לעזור בכל שאלה.' },
+  { name: 'order_ready', label: 'ההזמנה מוכנה', category: 'utility', body: 'היי {{1}}, ההזמנה שלכם מספר {{2}} מוכנה לאיסוף בסניף.' },
+  { name: 'appointment', label: 'תזכורת לפגישה', category: 'utility', body: 'שלום {{1}}, תזכורת לפגישה שנקבעה ל-{{2}}. להשיב 1 לאישור או 2 לביטול.' },
+  { name: 'autumn_sale', label: 'מבצע סתיו', category: 'marketing', body: 'היי {{1}}, מבצע הסתיו שלנו התחיל! {{2}} הנחה על כל המוצרים עד סוף החודש. להסרה מרשימת התפוצה השיבו "הסר".' },
 ];
 
 export const quickReplies: QuickReply[] = [
