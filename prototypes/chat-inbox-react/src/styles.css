@@ -297,7 +297,10 @@ a { color: var(--accent); }
 }
 
 .msg.out .to-task { inset-inline-end: auto; inset-inline-start: -32px; }
-.msg:hover .to-task, .msg:focus-within .to-task { display: block; }
+.msg:hover .to-task, .msg:focus-within .to-task { display: block; z-index: 1; /* above the hover strip below */ }
+/* invisible strip over the gap to the button: it belongs to the message, so the mouse stays "on" it */
+.msg::after { content: ''; position: absolute; top: 0; bottom: 0; inset-inline-end: -36px; width: 36px; }
+.msg.out::after { inset-inline-end: auto; inset-inline-start: -36px; }
 
 .media-img { display: block; max-width: 260px; width: 100%; border-radius: 6px; margin-bottom: 4px; cursor: zoom-in; }
 
