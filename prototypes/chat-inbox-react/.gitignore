@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# copied from dist/ by the build for local testing of page/
+page/chat-inbox.js

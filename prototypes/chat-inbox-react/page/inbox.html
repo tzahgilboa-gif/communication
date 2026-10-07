@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>תיבת שיחות | Global Sms</title>
+  <style>
+    html, body { margin: 0; height: 100%; }
+    body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; background: #f0f2f5; font-family: 'Heebo', Arial, sans-serif; }
+    .brand {
+      flex-shrink: 0; height: 52px; display: flex; align-items: center; gap: 10px;
+      padding: 0 16px; background: #fff; border-bottom: 1px solid #e3e6ea;
+    }
+    .brand img { height: 32px; width: auto; display: block; }
+    .brand .name { font-size: 18px; font-weight: 700; color: #7a0a7f; }
+    #chat-inbox { flex: 1; min-height: 0; }
+  </style>
+</head>
+<body>
+  <header class="brand">
+    <!-- company logo from the company's server; logo.svg is the fallback if it can't load -->
+    <img src="https://itnewsletter.itnewsletter.co.il/app/assets/img/logoGlobal.png" alt="Global Sms"
+      onerror="this.onerror = null; this.src = 'logo.svg';">
+    <span class="name">Global Sms</span>
+  </header>
+
+  <div id="chat-inbox"></div>
+  <script src="chat-inbox.js"></script>
+  <script>
+    // intSmsFactor: the server prints the account's value from the DB here
+    ChatInbox.mount(document.getElementById('chat-inbox'), { intSmsFactor: 3 });
+  </script>
+</body>
+</html>
